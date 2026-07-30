@@ -33,6 +33,17 @@ jobs:
       - name: Generate report
         run: python3 mf_daily_change.py --input holdings_public.json --no-open
 
+      - name: Send email summary
+        env:
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: "587"
+          SMTP_USER: ${{ secrets.EMAIL_ADDRESS }}
+          SMTP_PASSWORD: ${{ secrets.GMAIL }}
+          EMAIL_FROM: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_TO: ${{ secrets.EMAIL_ADDRESS }}
+          REPORT_URL: https://vipi-n.github.io/mf-daily-report/
+        run: python3 send_report_email.py
+
       - name: Prepare Pages files
         run: |
           mkdir -p _site
