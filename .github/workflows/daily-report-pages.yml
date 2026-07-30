@@ -31,7 +31,7 @@ jobs:
           python-version: "3.12"
 
       - name: Generate report
-        run: python3 mf_daily_change.py --xlsx holdings_public.xlsx --no-open
+        run: python3 mf_daily_change.py --input holdings_public.json --no-open
 
       - name: Prepare Pages files
         run: |
