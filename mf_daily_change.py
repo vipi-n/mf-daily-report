@@ -45,7 +45,8 @@ GROWW_BASE = "https://groww.in"
 AMFI_NAV_HISTORY_URL = "https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx"
 NSE_INDEX_ARCHIVE_BASE = "https://archives.nseindia.com/content/indices"
 NIFTY_INDICES_BASE = "https://www.niftyindices.com/indices/equity"
-USER_AGENT = "mf-daily-change/1.0"
+NSE_ALL_INDICES_URL = "https://www.nseindia.com/api/allIndices"
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36 mf-daily-change/1.0"
 ARBITRAGE_RE = re.compile(r"\barbitrage\b", re.IGNORECASE)
 
 
@@ -63,13 +64,21 @@ def index_benchmark_config(
         "fallbacks": [
             {
                 "name": name,
+                "source": "nse_live_index",
+                "index_name": index_name,
+                "url": NSE_ALL_INDICES_URL,
+            },
+            {
+                "name": name,
                 "source": "niftyindices_page",
+                "index_name": index_name,
                 "url": f"{NIFTY_INDICES_BASE}/{niftyindices_path}",
             }
         ],
     }
     if google_symbol:
-        config["fallbacks"].append(
+        config["fallbacks"].insert(
+            1,
             {
                 "name": name,
                 "source": "google_finance",
@@ -1201,9 +1210,17 @@ def get_benchmark_change_once(config: dict[str, Any], cache: Cache, trade_date: 
         if price:
             return price
         return None
+    if source == "nse_live_index":
+        index_name = str(config.get("index_name") or name).strip()
+        url = str(config.get("url") or NSE_ALL_INDICES_URL).strip()
+        price = get_nse_live_index_change(name, index_name, url, cache, trade_date) if url else None
+        if price:
+            return price
+        return None
     if source == "niftyindices_page":
+        index_name = str(config.get("index_name") or name).strip()
         url = str(config.get("url") or "").strip()
-        price = get_niftyindices_page_change(name, url, cache, trade_date) if url else None
+        price = get_niftyindices_page_change(name, index_name, url, cache, trade_date) if url else None
         if price:
             return price
         return None
@@ -1319,6 +1336,45 @@ def get_nse_index_archive_change(
     return None
 
 
+def get_nse_live_index_change(
+    name: str,
+    index_name: str,
+    url: str,
+    cache: Cache,
+    trade_date: str,
+) -> PriceChange | None:
+    if trade_date != today_iso():
+        return None
+    cache_path = cache.prices / trade_date / "nse_live_benchmarks" / f"{cache.key(index_name)}.json"
+    cached = cache.read_json(cache_path)
+    if cached is not None:
+        return PriceChange(**cached)
+    try:
+        data = http_json(url, cache, "nse_live_indices", refresh=True, retries=1)
+    except Exception:
+        return None
+    target = normalise(index_name)
+    for row in data.get("data", []) if isinstance(data, dict) else []:
+        row_name = str(row.get("index") or row.get("indexName") or "").strip()
+        if normalise(row_name) != target:
+            continue
+        change_pct = as_float(row.get("percentChange") or row.get("perChange"))
+        close = as_float(row.get("last") or row.get("lastPrice") or row.get("lastPriceValue"))
+        previous_close = close / (1.0 + change_pct / 100.0) if close is not None and change_pct not in (None, -100) else 0.0
+        if change_pct is None:
+            return None
+        price = PriceChange(
+            symbol=f"NSELive:{row_name or name}",
+            change_pct=change_pct,
+            last_close=close or 0.0,
+            previous_close=previous_close,
+            price_date=trade_date,
+        )
+        cache.write_json(cache_path, price.__dict__)
+        return price
+    return None
+
+
 def get_google_finance_change(
     name: str,
     google_symbol: str,
@@ -1411,7 +1467,7 @@ def make_google_finance_price(
     )
 
 
-def get_niftyindices_page_change(name: str, url: str, cache: Cache, trade_date: str) -> PriceChange | None:
+def get_niftyindices_page_change(name: str, index_name: str, url: str, cache: Cache, trade_date: str) -> PriceChange | None:
     if trade_date != today_iso():
         return None
     cache_path = cache.prices / trade_date / "niftyindices_benchmarks" / f"{cache.key(url)}.json"
@@ -1423,14 +1479,28 @@ def get_niftyindices_page_change(name: str, url: str, cache: Cache, trade_date: 
     except Exception:
         return None
     page = parse_visible_html(html)
-    price = parse_niftyindices_page_price(name, page.lines, trade_date)
+    price = parse_niftyindices_page_price(name, index_name, page.lines, trade_date)
     if price:
         cache.write_json(cache_path, price.__dict__)
     return price
 
 
-def parse_niftyindices_page_price(name: str, lines: list[str], trade_date: str) -> PriceChange | None:
+def parse_niftyindices_page_price(name: str, index_name: str, lines: list[str], trade_date: str) -> PriceChange | None:
+    target = normalise(index_name or name)
+    candidate_indexes = [
+        idx
+        for idx, line in enumerate(lines)
+        if normalise(line) == target or target in normalise(line)
+    ]
+    search_ranges: list[range] = []
+    for idx in candidate_indexes:
+        search_ranges.append(range(idx + 1, min(len(lines), idx + 18)))
+        search_ranges.append(range(max(0, idx - 8), idx))
+    if not search_ranges:
+        return None
     for idx, line in enumerate(lines):
+        if not any(idx in search_range for search_range in search_ranges):
+            continue
         combined_match = re.search(r"([+-]?\d+(?:,\d{2,3})*(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)%", line)
         pct_only_match = re.fullmatch(r"([+-]?\d+(?:\.\d+)?)%", line)
         if not combined_match and not pct_only_match:
@@ -1855,7 +1925,7 @@ def print_report(estimates: list[FundEstimate], unresolved: list[tuple[FundRow, 
     headers.append("Est % today")
     if has_values:
         headers.append("Est Rs")
-    headers.extend(["Benchmark", "Priced wt", "Missing wt", "Holdings", "Watchlist"])
+    headers.extend(["Benchmark", "Priced wt", "Missing wt", "Holdings"])
     rows = []
     for est in estimates:
         row = [display_date(est.analysis_date), short_name(est.fund.name)]
@@ -1870,7 +1940,6 @@ def print_report(estimates: list[FundEstimate], unresolved: list[tuple[FundRow, 
                 f"{est.priced_weight_pct:.1f}%",
                 f"{est.missing_weight_pct:.1f}%",
                 f"{est.priced_count}/{est.holdings_count}",
-                " | ".join(est.watchlist_notes[:2]),
             ]
         )
         rows.append(row)
@@ -2077,91 +2146,91 @@ def write_interactive_report(
   <style>
     :root {{
       color-scheme: light;
-      --bg: #f3f5f7;
+      --bg: #f7f8fa;
       --panel: #ffffff;
-      --panel-soft: #f8fafb;
+      --panel-soft: #f3f5f7;
       --text: #1f2933;
-      --muted: #66758a;
-      --line: #d9e1ea;
+      --muted: #6b7685;
+      --line: #e2e7ee;
       --pos: #087f5b;
       --neg: #c92a2a;
       --warn: #b7791f;
-      --accent: #0f766e;
-      --accent-2: #2f6f9f;
+      --accent: #2563eb;
+      --accent-2: #0f766e;
       --ink: #17212b;
     }}
     * {{ box-sizing: border-box; }}
     body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }}
-    body::before {{ content: ""; position: fixed; inset: 0 0 auto; height: 340px; background: radial-gradient(circle at 18% 20%, rgba(15, 118, 110, 0.18), transparent 28%), radial-gradient(circle at 86% 14%, rgba(47, 111, 159, 0.16), transparent 30%), linear-gradient(135deg, #17212b 0%, #243240 54%, #314153 100%); z-index: -1; }}
-    header {{ padding: 26px 28px 18px; color: #f8fafc; }}
-    .hero {{ display: grid; grid-template-columns: 1fr minmax(360px, 0.9fr); gap: 22px; align-items: stretch; max-width: 1500px; margin: 0 auto; }}
-    .heroTitle {{ display: flex; flex-direction: column; justify-content: space-between; min-height: 176px; }}
-    .eyebrow {{ width: fit-content; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.08); border-radius: 999px; padding: 7px 10px; color: #dce7ef; font-size: 12px; font-weight: 760; }}
-    h1 {{ margin: 14px 0 8px; font-size: clamp(30px, 4vw, 54px); line-height: 1.03; font-weight: 840; letter-spacing: 0; max-width: 820px; }}
-    .sub {{ color: #bfd0dd; font-size: 14px; }}
+    body::before {{ content: none; }}
+    header {{ padding: 22px 28px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }}
+    .hero {{ display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; max-width: 1320px; margin: 0 auto; }}
+    .heroTitle {{ display: flex; flex-direction: column; justify-content: center; min-height: auto; }}
+    .eyebrow {{ width: fit-content; border: 1px solid var(--line); background: var(--panel-soft); border-radius: 999px; padding: 5px 9px; color: var(--muted); font-size: 11px; font-weight: 760; }}
+    h1 {{ margin: 10px 0 5px; font-size: 28px; line-height: 1.15; font-weight: 820; letter-spacing: 0; }}
+    .sub {{ color: var(--muted); font-size: 13px; }}
     .heroActions {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }}
-    .liveLink {{ color: #071317; border: 0; border-radius: 999px; padding: 10px 14px; background: #b7f4df; font-weight: 800; font-size: 13px; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.16); }}
-    .heroPanel {{ border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.09); border-radius: 18px; padding: 18px; backdrop-filter: blur(16px); box-shadow: 0 22px 60px rgba(0,0,0,0.22); }}
-    .heroMetric {{ display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; }}
-    .heroMetric .label {{ color: #bfd0dd; font-size: 12px; font-weight: 760; text-transform: uppercase; }}
-    .heroMetric .value {{ font-size: 46px; line-height: 1; font-weight: 860; }}
-    .sparkline {{ height: 54px; display: flex; align-items: end; gap: 5px; justify-content: flex-end; }}
-    .sparkline span {{ width: 9px; min-height: 8px; border-radius: 999px 999px 0 0; background: #70e2bd; opacity: 0.95; }}
-    .heroGrid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }}
-    .heroMini {{ border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; background: rgba(255,255,255,0.08); padding: 12px; min-height: 82px; }}
-    .heroMini .label {{ color: #bfd0dd; font-size: 11px; font-weight: 760; text-transform: uppercase; }}
-    .heroMini .value {{ margin-top: 6px; font-size: 17px; font-weight: 820; color: #fff; line-height: 1.25; }}
-    main {{ padding: 0 28px 30px; max-width: 1500px; margin: 0 auto; }}
-    .toolbar {{ margin-top: 8px; border: 1px solid rgba(217,225,234,0.85); background: rgba(255,255,255,0.88); backdrop-filter: blur(18px); border-radius: 16px; padding: 14px; box-shadow: 0 18px 50px rgba(31,41,51,0.10); }}
+    .liveLink {{ color: #ffffff; border: 0; border-radius: 8px; padding: 9px 12px; background: var(--accent); font-weight: 760; font-size: 12px; white-space: nowrap; }}
+    .heroPanel {{ border: 1px solid var(--line); background: var(--panel-soft); border-radius: 10px; padding: 12px; min-width: 360px; }}
+    .heroMetric {{ display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }}
+    .heroMetric .label {{ color: var(--muted); font-size: 11px; font-weight: 760; text-transform: uppercase; }}
+    .heroMetric .value {{ font-size: 30px; line-height: 1; font-weight: 820; }}
+    .sparkline {{ height: 34px; display: flex; align-items: end; gap: 4px; justify-content: flex-end; }}
+    .sparkline span {{ width: 7px; min-height: 6px; border-radius: 999px 999px 0 0; background: #2b8a6e; opacity: 0.9; }}
+    .heroGrid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }}
+    .heroMini {{ border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 9px; min-height: 58px; }}
+    .heroMini .label {{ color: var(--muted); font-size: 10px; font-weight: 760; text-transform: uppercase; }}
+    .heroMini .value {{ margin-top: 4px; font-size: 13px; font-weight: 760; color: var(--text); line-height: 1.25; }}
+    main {{ padding: 14px 28px 30px; max-width: 1320px; margin: 0 auto; }}
+    .toolbar {{ border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 12px; box-shadow: none; }}
     .controls {{ display: grid; grid-template-columns: 1.7fr minmax(150px, 220px) minmax(170px, 230px) auto; gap: 10px; margin-bottom: 12px; }}
-    input, select {{ width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px 13px; background: white; color: var(--text); font-size: 14px; outline: none; }}
-    input:focus, select:focus {{ border-color: #74b7a6; box-shadow: 0 0 0 3px rgba(15,118,110,0.12); }}
-    .viewToggle {{ display: inline-flex; border: 1px solid var(--line); background: #edf2f6; border-radius: 12px; padding: 3px; gap: 3px; height: 44px; }}
-    .viewToggle button {{ border: 0; border-radius: 9px; padding: 8px 12px; background: transparent; color: #465568; font-weight: 800; }}
-    .viewToggle button.active {{ background: #fff; color: var(--accent); box-shadow: 0 1px 4px rgba(31,41,51,0.10); }}
+    input, select {{ width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px 11px; background: white; color: var(--text); font-size: 13px; outline: none; }}
+    input:focus, select:focus {{ border-color: #9ab8f7; box-shadow: 0 0 0 3px rgba(37,99,235,0.10); }}
+    .viewToggle {{ display: inline-flex; border: 1px solid var(--line); background: var(--panel-soft); border-radius: 9px; padding: 2px; gap: 2px; height: 38px; }}
+    .viewToggle button {{ border: 0; border-radius: 7px; padding: 7px 10px; background: transparent; color: #465568; font-weight: 760; }}
+    .viewToggle button.active {{ background: #fff; color: var(--accent); box-shadow: 0 1px 2px rgba(31,41,51,0.08); }}
     .quickbar {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }}
-    .chipBtn {{ border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 12px; font-weight: 750; }}
-    .chipBtn:hover {{ background: #f2f7f6; }}
-    .chipBtn.active {{ background: #dff5ef; border-color: #8ed5c1; color: var(--accent); }}
+    .chipBtn {{ border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; cursor: pointer; color: #334155; font-size: 12px; font-weight: 720; }}
+    .chipBtn:hover {{ background: var(--panel-soft); }}
+    .chipBtn.active {{ background: #eef4ff; border-color: #bad0ff; color: var(--accent); }}
     .spacer {{ flex: 1; min-width: 16px; }}
-    .stats {{ display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }}
-    .stat {{ background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: 0 10px 30px rgba(31,41,51,0.07); }}
-    .stat .label {{ color: var(--muted); font-size: 12px; margin-bottom: 7px; font-weight: 760; text-transform: uppercase; }}
-    .stat .value {{ font-size: 26px; font-weight: 830; }}
-    .stat .sub {{ color: var(--muted); font-size: 12px; margin-top: 4px; }}
-    .sectionHead {{ display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 22px 0 10px; }}
-    .sectionHead h2 {{ margin: 0; font-size: 18px; }}
-    .sectionHead p {{ margin: 4px 0 0; color: var(--muted); font-size: 13px; }}
-    .insights {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 0 0 18px; }}
-    .fundCard {{ border: 1px solid var(--line); background: linear-gradient(180deg, #fff 0%, #fbfcfd 100%); border-radius: 16px; padding: 16px; cursor: pointer; min-height: 142px; display: grid; gap: 13px; box-shadow: 0 12px 32px rgba(31,41,51,0.07); position: relative; overflow: hidden; }}
+    .stats {{ display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; margin: 12px 0 16px; }}
+    .stat {{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 13px; box-shadow: none; }}
+    .stat .label {{ color: var(--muted); font-size: 11px; margin-bottom: 6px; font-weight: 760; text-transform: uppercase; }}
+    .stat .value {{ font-size: 22px; font-weight: 800; }}
+    .stat .sub {{ color: var(--muted); font-size: 11px; margin-top: 3px; }}
+    .sectionHead {{ display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 16px 0 8px; }}
+    .sectionHead h2 {{ margin: 0; font-size: 15px; }}
+    .sectionHead p {{ margin: 3px 0 0; color: var(--muted); font-size: 12px; }}
+    .insights {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin: 0 0 14px; }}
+    .fundCard {{ border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 13px; cursor: pointer; min-height: 104px; display: grid; gap: 10px; box-shadow: none; position: relative; overflow: hidden; }}
     .fundCard::before {{ content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--pos); }}
     .fundCard.negBorder::before {{ background: var(--neg); }}
-    .fundCard:hover {{ transform: translateY(-3px); box-shadow: 0 18px 42px rgba(31,41,51,0.13); border-color: #b8c8d8; }}
+    .fundCard:hover {{ border-color: #b8c8d8; background: #fbfcfe; }}
     .fundCard .top {{ display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }}
-    .fundCard .name {{ font-size: 14px; font-weight: 830; color: #1f5f84; line-height: 1.2; padding-left: 2px; }}
-    .fundCard .move {{ font-size: 26px; font-weight: 880; white-space: nowrap; }}
-    .range {{ height: 10px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
+    .fundCard .name {{ font-size: 13px; font-weight: 780; color: #1f3b57; line-height: 1.25; padding-left: 2px; }}
+    .fundCard .move {{ font-size: 22px; font-weight: 820; white-space: nowrap; }}
+    .range {{ height: 6px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
     .range span {{ display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b8a6e, #2f9e44); }}
     .fundCard.negBorder .range span {{ background: linear-gradient(90deg, #e03131, #f08c00); }}
-    .metaLine {{ display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 650; }}
-    .tableWrap {{ background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: auto; max-height: calc(100vh - 260px); box-shadow: 0 12px 32px rgba(31,41,51,0.07); }}
-    table {{ width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; font-size: 13px; }}
-    th, td {{ padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; background: #fff; }}
-    th {{ position: sticky; top: 0; z-index: 3; text-align: left; color: #334155; background: #f1f5f8; user-select: none; cursor: pointer; white-space: nowrap; box-shadow: inset 0 -1px 0 var(--line); }}
+    .metaLine {{ display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; font-weight: 650; }}
+    .tableWrap {{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: calc(100vh - 230px); box-shadow: none; }}
+    table {{ width: 100%; min-width: 1050px; border-collapse: separate; border-spacing: 0; font-size: 13px; }}
+    th, td {{ padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; background: #fff; }}
+    th {{ position: sticky; top: 0; z-index: 3; text-align: left; color: #4b5563; background: #f8fafc; user-select: none; cursor: pointer; white-space: nowrap; box-shadow: inset 0 -1px 0 var(--line); font-size: 12px; font-weight: 760; }}
     th.sortActive::after {{ content: attr(data-dir); margin-left: 6px; color: var(--accent); }}
     tbody tr.mainRow:hover td {{ background: #f8fafc; }}
-    .stickyDate {{ position: sticky; left: 0; z-index: 2; min-width: 118px; }}
-    .stickyFund {{ position: sticky; left: 118px; z-index: 2; min-width: 320px; max-width: 380px; box-shadow: 1px 0 0 var(--line); }}
-    th.stickyDate, th.stickyFund {{ z-index: 4; background: #f1f5f8; }}
+    .stickyDate {{ position: sticky; left: 0; z-index: 2; min-width: 112px; }}
+    .stickyFund {{ position: sticky; left: 112px; z-index: 2; min-width: 300px; max-width: 360px; box-shadow: 1px 0 0 var(--line); }}
+    th.stickyDate, th.stickyFund {{ z-index: 4; background: #f8fafc; }}
     .mainRow.open td {{ background: #f8fbfd; }}
     .num {{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }}
     .dateCell {{ white-space: nowrap; }}
-    .fundCell a {{ color: #1f5f84; font-weight: 700; }}
+    .fundCell a {{ color: #1f3b57; font-weight: 720; }}
     .fundMeta {{ margin-top: 4px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: 11px; }}
     .pos {{ color: var(--pos); font-weight: 650; }}
     .neg {{ color: var(--neg); font-weight: 650; }}
     .muted {{ color: var(--muted); }}
-    .pill {{ display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; background: #edf2f7; color: #475569; font-size: 11px; font-weight: 780; white-space: nowrap; }}
+    .pill {{ display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 7px; background: #eef2f7; color: #475569; font-size: 11px; font-weight: 760; white-space: nowrap; }}
     .pill.pos {{ background: #e6f4ef; color: var(--pos); }}
     .pill.neg {{ background: #fdecec; color: var(--neg); }}
     .pill.warn {{ background: #fff4d6; color: #8a5a00; }}
@@ -2169,12 +2238,12 @@ def write_interactive_report(
     .bar {{ height: 8px; min-width: 92px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
     .bar span {{ display: block; height: 100%; border-radius: inherit; background: #2b8a6e; }}
     .barWrap {{ display: grid; gap: 4px; justify-items: end; }}
-    button {{ border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 11px; cursor: pointer; color: var(--accent); font-weight: 760; }}
+    button {{ border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; cursor: pointer; color: var(--accent); font-weight: 740; }}
     button:hover {{ background: #f2f7f6; }}
     .details {{ display: none; background: #fbfcfe; }}
     .details.open {{ display: table-row; }}
     .details td {{ background: #fbfcfe; }}
-    .detailGrid {{ display: grid; grid-template-columns: 1.15fr 1fr 0.9fr; gap: 14px; padding: 6px 0; }}
+    .detailGrid {{ display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; padding: 6px 0; }}
     .detailBox {{ border: 1px solid var(--line); border-radius: 8px; background: white; overflow: hidden; }}
     .detailBox h3 {{ margin: 0; padding: 10px 12px; font-size: 13px; background: #f1f5f9; }}
     .detailBox ul {{ margin: 10px 18px 12px; padding: 0 0 0 12px; color: #475569; }}
@@ -2187,31 +2256,35 @@ def write_interactive_report(
     body.viewCards .tableSection {{ display: none; }}
     body.viewTable .cardsSection {{ display: none; }}
     body.dark {{
-      --bg: #0f1720;
-      --panel: #17212b;
-      --panel-soft: #1d2935;
-      --text: #e5edf3;
-      --muted: #9cadbd;
-      --line: #2c3b49;
+      --bg: #0b1117;
+      --panel: #111827;
+      --panel-soft: #162033;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #263244;
       --pos: #5ce0b0;
       --neg: #ff7f7f;
       --warn: #f4c76d;
-      --accent: #62d7bd;
+      --accent: #8bb7ff;
       --accent-2: #8fc7ff;
       --ink: #0b1117;
     }}
-    body.dark::before {{ background: radial-gradient(circle at 18% 20%, rgba(92,224,176,0.14), transparent 28%), radial-gradient(circle at 86% 14%, rgba(143,199,255,0.12), transparent 30%), linear-gradient(135deg, #071017 0%, #111d28 55%, #182634 100%); }}
-    body.dark .toolbar {{ background: rgba(23,33,43,0.88); border-color: rgba(80,99,118,0.7); box-shadow: 0 18px 50px rgba(0,0,0,0.22); }}
+    body.dark header {{ background: var(--panel); border-color: var(--line); }}
+    body.dark .heroPanel, body.dark .heroMini {{ background: var(--panel-soft); border-color: var(--line); }}
+    body.dark .heroMini .value {{ color: var(--text); }}
+    body.dark .liveLink {{ background: #2f66d9; color: #fff; }}
+    body.dark .toolbar {{ background: var(--panel); border-color: var(--line); box-shadow: none; }}
     body.dark input, body.dark select {{ background: #101923; color: var(--text); border-color: var(--line); }}
     body.dark input::placeholder {{ color: #7f91a3; }}
-    body.dark .viewToggle {{ background: #101923; border-color: var(--line); }}
+    body.dark .viewToggle {{ background: #0b1117; border-color: var(--line); }}
     body.dark .viewToggle button {{ color: #aab8c8; }}
-    body.dark .viewToggle button.active {{ background: #223142; color: var(--accent); }}
+    body.dark .viewToggle button.active {{ background: #1e293b; color: var(--accent); }}
     body.dark .chipBtn, body.dark button {{ background: #17212b; color: #cfe4ec; border-color: var(--line); }}
     body.dark .chipBtn:hover, body.dark button:hover {{ background: #1f2d3a; }}
-    body.dark .chipBtn.active {{ background: rgba(92,224,176,0.13); border-color: rgba(92,224,176,0.45); color: var(--accent); }}
-    body.dark .stat, body.dark .fundCard, body.dark .tableWrap, body.dark .detailBox {{ background: #17212b; border-color: var(--line); box-shadow: 0 12px 34px rgba(0,0,0,0.22); }}
-    body.dark .fundCard {{ background: linear-gradient(180deg, #17212b 0%, #141e28 100%); }}
+    body.dark .chipBtn.active {{ background: rgba(139,183,255,0.14); border-color: rgba(139,183,255,0.4); color: var(--accent); }}
+    body.dark .stat, body.dark .fundCard, body.dark .tableWrap, body.dark .detailBox {{ background: var(--panel); border-color: var(--line); box-shadow: none; }}
+    body.dark .fundCard {{ background: var(--panel); }}
+    body.dark .fundCard:hover {{ background: #151f2d; }}
     body.dark .fundCard .name, body.dark .fundCell a {{ color: #9bd4ff; }}
     body.dark .range, body.dark .bar {{ background: #273545; }}
     body.dark th, body.dark th.stickyDate, body.dark th.stickyFund {{ background: #1d2935; color: #cdd8e4; box-shadow: inset 0 -1px 0 var(--line); }}
@@ -2231,7 +2304,7 @@ def write_interactive_report(
       h1 {{ font-size: 34px; }}
       .tableWrap {{ max-height: none; }}
       .stickyDate, .stickyFund {{ position: static; min-width: auto; max-width: none; box-shadow: none; }}
-      th:nth-child(7), td:nth-child(7), th:nth-child(9), td:nth-child(9) {{ display: none; }}
+      th:nth-child(7), td:nth-child(7), th:nth-child(8), td:nth-child(8) {{ display: none; }}
     }}
   </style>
 </head>
@@ -2284,15 +2357,14 @@ def write_interactive_report(
           <option value="missing_desc">Sort: Missing weight</option>
         </select>
         <div class="viewToggle" aria-label="View mode">
-          <button id="viewCards" type="button" class="active">Cards</button>
-          <button id="viewTable" type="button">Table</button>
+          <button id="viewTable" type="button" class="active">Table</button>
+          <button id="viewCards" type="button">Cards</button>
         </div>
       </section>
       <section class="quickbar" id="quickbar">
         <button class="chipBtn active" data-filter="all">All</button>
         <button class="chipBtn" data-filter="gainers">Gainers</button>
         <button class="chipBtn" data-filter="losers">Losers</button>
-        <button class="chipBtn" data-filter="watchlist">Watchlist</button>
         <button class="chipBtn" data-filter="missing">Missing Data</button>
         <span class="spacer"></span>
         <button class="chipBtn" id="clearFilters" type="button">Reset</button>
@@ -2328,7 +2400,6 @@ def write_interactive_report(
               <th data-sort="benchmark_change_pct" class="num">Benchmark</th>
               <th data-sort="priced_weight_pct" class="num">Priced Wt</th>
               <th data-sort="missing_weight_pct" class="num">Missing Wt</th>
-              <th>Watchlist</th>
               <th>Details</th>
             </tr>
           </thead>
@@ -2366,7 +2437,7 @@ def write_interactive_report(
     const generatedText = `${{String(generatedDate.getDate()).padStart(2, '0')}}-${{String(generatedDate.getMonth() + 1).padStart(2, '0')}}-${{generatedDate.getFullYear()}}, ${{generatedDate.toLocaleTimeString()}}`;
 
     document.body.classList.toggle('noValues', !hasValues);
-    document.body.classList.add('viewCards');
+    document.body.classList.add('viewTable');
     document.getElementById('generated').textContent = `Generated ${{generatedText}} | ${{report.funds.length}} rows`;
 
     function applyTheme(theme) {{
@@ -2393,7 +2464,6 @@ def write_interactive_report(
           activeQuick === 'all' ||
           (activeQuick === 'gainers' && Number(f.estimated_change_pct || 0) > 0) ||
           (activeQuick === 'losers' && Number(f.estimated_change_pct || 0) < 0) ||
-          (activeQuick === 'watchlist' && (f.watchlist_notes || []).length > 0) ||
           (activeQuick === 'missing' && Number(f.missing_weight_pct || 0) > 0);
         return quick && (!q || hay.includes(q)) && (!date || f.analysis_date === date);
       }});
@@ -2432,7 +2502,6 @@ def write_interactive_report(
           <div class="stat"><div class="label">Overall Change</div><div class="value ${{cls(avg)}}">${{signed(avg)}}</div><div class="sub">Equal-weight average</div></div>
           <div class="stat"><div class="label">Market Breadth</div><div class="value">${{gainers}} / ${{losers}}</div><div class="sub">Gainers / Losers</div></div>
           <div class="stat"><div class="label">Average Missing</div><div class="value">${{pct(missing)}}</div></div>
-          <div class="stat"><div class="label">Watchlist Flags</div><div class="value">${{rows.filter(r => (r.watchlist_notes || []).length > 0).length}}</div></div>
         `;
         return;
       }}
@@ -2477,7 +2546,6 @@ def write_interactive_report(
         const move = Number(f.estimated_change_pct || 0);
         const width = Math.max(6, Math.abs(move) / maxAbs * 100);
         const benchmark = f.benchmark_change_pct == null ? `${{f.benchmark_name || 'Benchmark'}} pending` : `${{f.benchmark_name || 'Benchmark'}} ${{signed(f.benchmark_change_pct)}}`;
-        const watch = (f.watchlist_notes || []).length ? '<span class="pill warn">Watchlist</span>' : '';
         return `
           <article class="fundCard ${{move >= 0 ? 'posBorder' : 'negBorder'}}" data-fund="${{esc(fundName(f))}}">
             <div class="top">
@@ -2486,7 +2554,6 @@ def write_interactive_report(
             </div>
             <div class="range"><span style="width:${{width}}%"></span></div>
             <div class="metaLine"><span>${{esc(benchmark)}}</span><span>Priced ${{pct(f.priced_weight_pct)}}</span></div>
-            <div class="fundMeta">${{watch}}<span class="pill">${{esc(f.holdings_month || 'Latest data')}}</span></div>
           </article>
         `;
       }}).join('');
@@ -2527,7 +2594,6 @@ def write_interactive_report(
         const id = rowId(f);
         const isOpen = expandedAll;
         const confidence = Math.max(0, Math.min(100, Number(f.priced_weight_pct || 0)));
-        const watch = (f.watchlist_notes || [])[0] || '';
         const benchmarkLabel = f.benchmark_name ? `<span class="pill">${{esc(f.benchmark_name)}}</span>` : '';
         return `
         <tr class="mainRow ${{isOpen ? 'open' : ''}}" data-row="${{esc(id)}}">
@@ -2536,7 +2602,6 @@ def write_interactive_report(
             ${{f.reference_url ? `<a href="${{esc(f.reference_url)}}" target="_blank">${{esc(fundName(f))}}</a>` : esc(fundName(f))}}
             <div class="fundMeta">
               ${{benchmarkLabel}}
-              ${{watch ? '<span class="pill warn">Flag</span>' : ''}}
             </div>
           </td>
           <td class="num valueCol">${{money(f.invested_value)}}</td>
@@ -2545,15 +2610,13 @@ def write_interactive_report(
           <td class="num ${{f.benchmark_change_pct == null ? 'muted' : cls(f.benchmark_change_pct)}}">${{pct(f.benchmark_change_pct)}}</td>
           <td class="num"><div class="barWrap"><span>${{pct(f.priced_weight_pct)}}</span><div class="bar"><span style="width:${{confidence}}%"></span></div></div></td>
           <td class="num">${{pct(f.missing_weight_pct)}}</td>
-          <td class="watch">${{esc((f.watchlist_notes || [])[0] || '')}}</td>
           <td><button data-row="${{esc(id)}}">${{isOpen ? 'Close' : 'Open'}}</button></td>
         </tr>
-        <tr class="details ${{isOpen ? 'open' : ''}}" id="detail-${{esc(id)}}"><td colspan="10"><div class="detailGrid">
+        <tr class="details ${{isOpen ? 'open' : ''}}" id="detail-${{esc(id)}}"><td colspan="9"><div class="detailGrid">
           <div class="detailBox"><h3>Largest Contributors</h3>${{miniTable(f.contributors, 'No priced contributors.')}}</div>
           <div class="detailBox"><h3>Missing Holdings</h3>${{missingTable(f.missing)}}</div>
-          <div class="detailBox"><h3>Watchlist Notes</h3>${{notesList(f.watchlist_notes)}}</div>
         </div></td></tr>
-      `; }}).join('') || '<tr><td colspan="10" class="empty">No rows match the current filters.</td></tr>';
+      `; }}).join('') || '<tr><td colspan="9" class="empty">No rows match the current filters.</td></tr>';
       rowsEl.querySelectorAll('button[data-row]').forEach(btn => btn.addEventListener('click', () => {{
         const row = document.getElementById(`detail-${{btn.dataset.row}}`);
         const main = rowsEl.querySelector(`tr[data-row="${{btn.dataset.row}}"]`);
@@ -2606,7 +2669,7 @@ def write_interactive_report(
       applyTheme(next);
     }});
     populateFilters();
-    setViewMode('cards');
+    setViewMode('table');
     render();
   </script>
 </body>

@@ -6,6 +6,9 @@ This project generates a static interactive HTML report for the funds listed in 
 
 The GitHub Pages workflow runs:
 
+- 12:15 PM IST on weekdays for a midday update
+- 6:45 PM IST on weekdays for the after-market update
+
 ```bash
 python3 mf_daily_change.py --input holdings_public.json --no-open
 ```
@@ -32,7 +35,7 @@ Arbitrage funds are excluded unless `--include-arbitrage` is used.
 
 - Current-day holdings and stock moves: Groww pages where available
 - Older-date fund movement: AMFI official historical NAV download
-- Indian benchmark values: NSE daily index archive first, then Finology, then the relevant Nifty Indices page; NIFTY 50 and NIFTY 500 also have Google Finance fallbacks
+- Indian benchmark values: NSE daily index archive first, then Finology, then NSE live indices, then stricter Nifty Indices page fallback; NIFTY 50 and NIFTY 500 also have Google Finance fallbacks
 - MFData: optional holdings fallback
 
 The AMFI historical NAV request uses only a date range. Fund ISINs are filtered locally after the data is downloaded.

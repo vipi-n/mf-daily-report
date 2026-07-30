@@ -17,7 +17,14 @@
       "fallbacks": [
         {
           "name": "Nifty Midcap 150",
+          "source": "nse_live_index",
+          "index_name": "Nifty Midcap 150",
+          "url": "https://www.nseindia.com/api/allIndices"
+        },
+        {
+          "name": "Nifty Midcap 150",
           "source": "niftyindices_page",
+          "index_name": "Nifty Midcap 150",
           "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-midcap-150"
         }
       ]
@@ -30,7 +37,14 @@
       "fallbacks": [
         {
           "name": "Nifty Midcap 150",
+          "source": "nse_live_index",
+          "index_name": "Nifty Midcap 150",
+          "url": "https://www.nseindia.com/api/allIndices"
+        },
+        {
+          "name": "Nifty Midcap 150",
           "source": "niftyindices_page",
+          "index_name": "Nifty Midcap 150",
           "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-midcap-150"
         }
       ]
@@ -43,7 +57,14 @@
       "fallbacks": [
         {
           "name": "Nifty Midcap 150",
+          "source": "nse_live_index",
+          "index_name": "Nifty Midcap 150",
+          "url": "https://www.nseindia.com/api/allIndices"
+        },
+        {
+          "name": "Nifty Midcap 150",
           "source": "niftyindices_page",
+          "index_name": "Nifty Midcap 150",
           "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-midcap-150"
         }
       ]
@@ -56,7 +77,14 @@
       "fallbacks": [
         {
           "name": "Nifty Smallcap 250",
+          "source": "nse_live_index",
+          "index_name": "Nifty Smallcap 250",
+          "url": "https://www.nseindia.com/api/allIndices"
+        },
+        {
+          "name": "Nifty Smallcap 250",
           "source": "niftyindices_page",
+          "index_name": "Nifty Smallcap 250",
           "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-smallcap-250"
         }
       ]
@@ -69,14 +97,21 @@
       "fallbacks": [
         {
           "name": "Nifty 500",
-          "source": "niftyindices_page",
-          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-500"
+          "source": "nse_live_index",
+          "index_name": "Nifty 500",
+          "url": "https://www.nseindia.com/api/allIndices"
         },
         {
           "name": "Nifty 500",
           "source": "google_finance",
           "google_symbol": "NIFTY_500:INDEXNSE",
           "url": "https://www.google.com/finance/quote/NIFTY_500%3AINDEXNSE?hl=en"
+        },
+        {
+          "name": "Nifty 500",
+          "source": "niftyindices_page",
+          "index_name": "Nifty 500",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-500"
         }
       ]
     },
@@ -94,14 +129,21 @@
       "fallbacks": [
         {
           "name": "NIFTY 50",
-          "source": "niftyindices_page",
-          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-50"
+          "source": "nse_live_index",
+          "index_name": "Nifty 50",
+          "url": "https://www.nseindia.com/api/allIndices"
         },
         {
           "name": "NIFTY 50",
           "source": "google_finance",
           "google_symbol": "NIFTY_50:INDEXNSE",
           "url": "https://www.google.com/finance/quote/NIFTY_50%3AINDEXNSE?hl=en"
+        },
+        {
+          "name": "NIFTY 50",
+          "source": "niftyindices_page",
+          "index_name": "Nifty 50",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-50"
         }
       ]
     },
@@ -113,7 +155,14 @@
       "fallbacks": [
         {
           "name": "NIFTY200 Momentum 30",
+          "source": "nse_live_index",
+          "index_name": "Nifty200 Momentum 30",
+          "url": "https://www.nseindia.com/api/allIndices"
+        },
+        {
+          "name": "NIFTY200 Momentum 30",
           "source": "niftyindices_page",
+          "index_name": "Nifty200 Momentum 30",
           "url": "https://www.niftyindices.com/indices/equity/strategy-indices/nifty200-momentum-30"
         }
       ]

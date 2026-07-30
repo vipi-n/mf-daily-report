@@ -8,14 +8,21 @@
     "fallbacks": [
       {
         "name": "NIFTY 50",
-        "source": "niftyindices_page",
-        "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-50"
+        "source": "nse_live_index",
+        "index_name": "Nifty 50",
+        "url": "https://www.nseindia.com/api/allIndices"
       },
       {
         "name": "NIFTY 50",
         "source": "google_finance",
         "google_symbol": "NIFTY_50:INDEXNSE",
         "url": "https://www.google.com/finance/quote/NIFTY_50%3AINDEXNSE?hl=en"
+      },
+      {
+        "name": "NIFTY 50",
+        "source": "niftyindices_page",
+        "index_name": "Nifty 50",
+        "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-50"
       }
     ]
   },
@@ -27,7 +34,14 @@
     "fallbacks": [
       {
         "name": "NIFTY200 Momentum 30",
+        "source": "nse_live_index",
+        "index_name": "Nifty200 Momentum 30",
+        "url": "https://www.nseindia.com/api/allIndices"
+      },
+      {
+        "name": "NIFTY200 Momentum 30",
         "source": "niftyindices_page",
+        "index_name": "Nifty200 Momentum 30",
         "url": "https://www.niftyindices.com/indices/equity/strategy-indices/nifty200-momentum-30"
       }
     ]

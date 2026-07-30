@@ -4,7 +4,7 @@ Live report: https://vipi-n.github.io/mf-daily-report/
 
 This project builds a daily percentage-change report for the mutual funds listed in `holdings_public.json`.
 
-It runs automatically on GitHub Pages every weekday after market close. You can also run it manually from GitHub Actions or locally.
+It runs automatically on GitHub Pages every weekday at 12:15 PM IST and 6:45 PM IST. You can also run it manually from GitHub Actions or locally.
 
 ## Daily Email
 
