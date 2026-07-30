@@ -4,12 +4,32 @@
     "name": "NIFTY 50",
     "source": "finology_index",
     "index_name": "Nifty 50",
-    "url": "https://ticker.finology.in/market/index/nse"
+    "url": "https://ticker.finology.in/market/index/nse",
+    "fallbacks": [
+      {
+        "name": "NIFTY 50",
+        "source": "niftyindices_page",
+        "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-50"
+      },
+      {
+        "name": "NIFTY 50",
+        "source": "google_finance",
+        "google_symbol": "NIFTY_50:INDEXNSE",
+        "url": "https://www.google.com/finance/quote/NIFTY_50%3AINDEXNSE?hl=en"
+      }
+    ]
   },
   "INF789F1AUT5": {
     "name": "NIFTY200 Momentum 30",
     "source": "finology_index",
     "index_name": "Nifty200 Momentum 30",
-    "url": "https://ticker.finology.in/market/index/nse"
+    "url": "https://ticker.finology.in/market/index/nse",
+    "fallbacks": [
+      {
+        "name": "NIFTY200 Momentum 30",
+        "source": "niftyindices_page",
+        "url": "https://www.niftyindices.com/indices/equity/strategy-indices/nifty200-momentum-30"
+      }
+    ]
   }
 }

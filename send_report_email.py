@@ -129,10 +129,21 @@ def main() -> int:
     message.set_content(text_body)
     message.add_alternative(html_body, subtype="html")
 
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(message)
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(message)
+    except smtplib.SMTPAuthenticationError:
+        print(
+            "Email not sent: Gmail rejected the login. Check EMAIL_ADDRESS and "
+            "GMAIL repository secrets. GMAIL must be a Gmail app password, not "
+            "your normal Google password."
+        )
+        return 0
+    except smtplib.SMTPException as exc:
+        print(f"Email not sent: SMTP error: {exc}")
+        return 0
     print(f"Email sent to {email_to}.")
     return 0
 

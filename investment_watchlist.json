@@ -13,31 +13,72 @@
       "name": "Nifty Midcap 150",
       "source": "finology_index",
       "index_name": "Nifty Midcap 150",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "Nifty Midcap 150",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-midcap-150"
+        }
+      ]
     },
     "INF247L01445": {
       "name": "Nifty Midcap 150",
       "source": "finology_index",
       "index_name": "Nifty Midcap 150",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "Nifty Midcap 150",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-midcap-150"
+        }
+      ]
     },
     "INF966L01887": {
       "name": "Nifty Midcap 150",
       "source": "finology_index",
       "index_name": "Nifty Midcap 150",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "Nifty Midcap 150",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-midcap-150"
+        }
+      ]
     },
     "INF966L01689": {
       "name": "Nifty Smallcap 250",
       "source": "finology_index",
       "index_name": "Nifty Smallcap 250",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "Nifty Smallcap 250",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-smallcap-250"
+        }
+      ]
     },
     "INF879O01027": {
       "name": "Nifty 500",
       "source": "finology_index",
       "index_name": "Nifty 500",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "Nifty 500",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-500"
+        },
+        {
+          "name": "Nifty 500",
+          "source": "google_finance",
+          "google_symbol": "NIFTY_500:INDEXNSE",
+          "url": "https://www.google.com/finance/quote/NIFTY_500%3AINDEXNSE?hl=en"
+        }
+      ]
     },
     "INF109KC1U50": {
       "name": "NASDAQ 100",
@@ -49,13 +90,33 @@
       "name": "NIFTY 50",
       "source": "finology_index",
       "index_name": "Nifty 50",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "NIFTY 50",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-50"
+        },
+        {
+          "name": "NIFTY 50",
+          "source": "google_finance",
+          "google_symbol": "NIFTY_50:INDEXNSE",
+          "url": "https://www.google.com/finance/quote/NIFTY_50%3AINDEXNSE?hl=en"
+        }
+      ]
     },
     "INF789F1AUT5": {
       "name": "NIFTY200 Momentum 30",
       "source": "finology_index",
       "index_name": "Nifty200 Momentum 30",
-      "url": "https://ticker.finology.in/market/index/nse"
+      "url": "https://ticker.finology.in/market/index/nse",
+      "fallbacks": [
+        {
+          "name": "NIFTY200 Momentum 30",
+          "source": "niftyindices_page",
+          "url": "https://www.niftyindices.com/indices/equity/strategy-indices/nifty200-momentum-30"
+        }
+      ]
     }
   },
   "valuations": {

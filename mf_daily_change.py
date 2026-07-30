@@ -44,8 +44,42 @@ MF_DATA_BASE = "https://mfdata.in/api/v1"
 GROWW_BASE = "https://groww.in"
 AMFI_NAV_HISTORY_URL = "https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx"
 NSE_INDEX_ARCHIVE_BASE = "https://archives.nseindia.com/content/indices"
+NIFTY_INDICES_BASE = "https://www.niftyindices.com/indices/equity"
 USER_AGENT = "mf-daily-change/1.0"
 ARBITRAGE_RE = re.compile(r"\barbitrage\b", re.IGNORECASE)
+
+
+def index_benchmark_config(
+    name: str,
+    index_name: str,
+    niftyindices_path: str,
+    google_symbol: str = "",
+) -> dict[str, Any]:
+    config: dict[str, Any] = {
+        "name": name,
+        "source": "finology_index",
+        "index_name": index_name,
+        "url": "https://ticker.finology.in/market/index/nse",
+        "fallbacks": [
+            {
+                "name": name,
+                "source": "niftyindices_page",
+                "url": f"{NIFTY_INDICES_BASE}/{niftyindices_path}",
+            }
+        ],
+    }
+    if google_symbol:
+        config["fallbacks"].append(
+            {
+                "name": name,
+                "source": "google_finance",
+                "google_symbol": google_symbol,
+                "url": f"https://www.google.com/finance/quote/{urllib.parse.quote(google_symbol)}?hl=en",
+            }
+        )
+    return config
+
+
 DEFAULT_GROWW_FUND_URLS = {
     "INF179K01XQ0": "https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth",
     "INF109KC1U50": "https://groww.in/mutual-funds/icici-prudential-nasdaq-100-index-fund-direct-growth",
@@ -57,18 +91,17 @@ DEFAULT_GROWW_FUND_URLS = {
     "INF789F01XA0": "https://groww.in/mutual-funds/uti-nifty-fund-direct-growth",
 }
 DEFAULT_BENCHMARK_OVERRIDES = {
-    "INF789F01XA0": {
-        "name": "NIFTY 50",
-        "source": "finology_index",
-        "index_name": "Nifty 50",
-        "url": "https://ticker.finology.in/market/index/nse",
-    },
-    "INF789F1AUT5": {
-        "name": "NIFTY200 Momentum 30",
-        "source": "finology_index",
-        "index_name": "Nifty200 Momentum 30",
-        "url": "https://ticker.finology.in/market/index/nse",
-    },
+    "INF789F01XA0": index_benchmark_config(
+        "NIFTY 50",
+        "Nifty 50",
+        "broad-based-indices/nifty-50",
+        "NIFTY_50:INDEXNSE",
+    ),
+    "INF789F1AUT5": index_benchmark_config(
+        "NIFTY200 Momentum 30",
+        "Nifty200 Momentum 30",
+        "strategy-indices/nifty200-momentum-30",
+    ),
 }
 DEFAULT_WATCHLIST_CONFIG = {
     "_comment": (
@@ -84,54 +117,49 @@ DEFAULT_WATCHLIST_CONFIG = {
         "underperform_bad_pct": -1.5,
     },
     "tracking_benchmarks": {
-        "INF179K01XQ0": {
-            "name": "Nifty Midcap 150",
-            "source": "finology_index",
-            "index_name": "Nifty Midcap 150",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
-        "INF247L01445": {
-            "name": "Nifty Midcap 150",
-            "source": "finology_index",
-            "index_name": "Nifty Midcap 150",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
-        "INF966L01887": {
-            "name": "Nifty Midcap 150",
-            "source": "finology_index",
-            "index_name": "Nifty Midcap 150",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
-        "INF966L01689": {
-            "name": "Nifty Smallcap 250",
-            "source": "finology_index",
-            "index_name": "Nifty Smallcap 250",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
-        "INF879O01027": {
-            "name": "Nifty 500",
-            "source": "finology_index",
-            "index_name": "Nifty 500",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
+        "INF179K01XQ0": index_benchmark_config(
+            "Nifty Midcap 150",
+            "Nifty Midcap 150",
+            "broad-based-indices/nifty-midcap-150",
+        ),
+        "INF247L01445": index_benchmark_config(
+            "Nifty Midcap 150",
+            "Nifty Midcap 150",
+            "broad-based-indices/nifty-midcap-150",
+        ),
+        "INF966L01887": index_benchmark_config(
+            "Nifty Midcap 150",
+            "Nifty Midcap 150",
+            "broad-based-indices/nifty-midcap-150",
+        ),
+        "INF966L01689": index_benchmark_config(
+            "Nifty Smallcap 250",
+            "Nifty Smallcap 250",
+            "broad-based-indices/nifty-smallcap-250",
+        ),
+        "INF879O01027": index_benchmark_config(
+            "Nifty 500",
+            "Nifty 500",
+            "broad-based-indices/nifty-500",
+            "NIFTY_500:INDEXNSE",
+        ),
         "INF109KC1U50": {
             "name": "NASDAQ 100",
             "source": "google_finance",
             "google_symbol": "NDX:INDEXNASDAQ",
             "url": "https://www.google.com/finance/quote/NDX:INDEXNASDAQ?hl=en",
         },
-        "INF789F01XA0": {
-            "name": "NIFTY 50",
-            "source": "finology_index",
-            "index_name": "Nifty 50",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
-        "INF789F1AUT5": {
-            "name": "NIFTY200 Momentum 30",
-            "source": "finology_index",
-            "index_name": "Nifty200 Momentum 30",
-            "url": "https://ticker.finology.in/market/index/nse",
-        },
+        "INF789F01XA0": index_benchmark_config(
+            "NIFTY 50",
+            "Nifty 50",
+            "broad-based-indices/nifty-50",
+            "NIFTY_50:INDEXNSE",
+        ),
+        "INF789F1AUT5": index_benchmark_config(
+            "NIFTY200 Momentum 30",
+            "Nifty200 Momentum 30",
+            "strategy-indices/nifty200-momentum-30",
+        ),
     },
     "valuations": {
         "INF789F01XA0": {
@@ -1132,6 +1160,20 @@ def resolve_benchmark_override(fund: FundRow, benchmark_overrides: dict[str, Any
 
 
 def get_benchmark_change(config: dict[str, Any], cache: Cache, trade_date: str) -> PriceChange | None:
+    candidates = [config]
+    for fallback in config.get("fallbacks", []):
+        if isinstance(fallback, dict):
+            candidates.append({**{"name": config.get("name")}, **fallback})
+    for candidate in candidates:
+        if candidate.get("disabled"):
+            continue
+        price = get_benchmark_change_once(candidate, cache, trade_date)
+        if price:
+            return price
+    return None
+
+
+def get_benchmark_change_once(config: dict[str, Any], cache: Cache, trade_date: str) -> PriceChange | None:
     source = str(config.get("source") or "").lower()
     name = str(config.get("name") or "Benchmark")
     if source == "manual":

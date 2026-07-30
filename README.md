@@ -15,6 +15,8 @@ Add these repository secrets in GitHub:
 - `GMAIL`: Gmail app password
 - `EMAIL_ADDRESS`: Gmail address used to send and receive the report
 
+If Gmail rejects the login, the site still publishes; fix the secrets and rerun the workflow to get email again.
+
 ## Update Holdings
 
 Edit `holdings_public.json` when you want to add, remove, or rename a fund.

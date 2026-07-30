@@ -32,7 +32,7 @@ Arbitrage funds are excluded unless `--include-arbitrage` is used.
 
 - Current-day holdings and stock moves: Groww pages where available
 - Older-date fund movement: AMFI official historical NAV download
-- Indian benchmark values: NSE daily index archive first, with Finology fallback for current-day pages
+- Indian benchmark values: NSE daily index archive first, then Finology, then the relevant Nifty Indices page; NIFTY 50 and NIFTY 500 also have Google Finance fallbacks
 - MFData: optional holdings fallback
 
 The AMFI historical NAV request uses only a date range. Fund ISINs are filtered locally after the data is downloaded.
@@ -46,7 +46,7 @@ The AMFI historical NAV request uses only a date range. Fund ISINs are filtered 
 
 ## Benchmark Display
 
-Benchmark values come from `investment_watchlist.json` under `tracking_benchmarks`, plus index-fund overrides in `benchmark_overrides.json`.
+Benchmark values come from `investment_watchlist.json` under `tracking_benchmarks`, plus index-fund overrides in `benchmark_overrides.json`. The script merges missing default benchmark mappings into those JSON files at runtime.
 
 If the report shows a benchmark as pending or blank, the usual causes are:
 
