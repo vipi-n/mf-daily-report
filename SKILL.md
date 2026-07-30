@@ -10,6 +10,12 @@ The GitHub Pages workflow runs:
 python3 mf_daily_change.py --input holdings_public.json --no-open
 ```
 
+It then runs:
+
+```bash
+python3 send_report_email.py
+```
+
 ## Input File
 
 `holdings_public.json` is the source of truth for the public report.
@@ -79,6 +85,23 @@ These are generated artifacts and do not need to be committed.
 - `investment_watchlist.json`: controls watchlist thresholds and manual PE comparison inputs
 - `fund_overrides.json`: optional MFData mapping overrides
 - `stock_symbol_overrides.json`: retained for compatibility; not used by the current Groww-only stock pricing mode
+
+## Email Secrets
+
+The workflow sends a summary email when these repository secrets exist:
+
+- `GMAIL`: Gmail app password, with spaces removed
+- `EMAIL_ADDRESS`: Gmail address used as sender and recipient
+
+The email script also supports advanced SMTP environment variables:
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `EMAIL_FROM`
+- `EMAIL_TO`
+- `REPORT_URL`
 
 ## Limitations
 

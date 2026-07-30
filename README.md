@@ -6,6 +6,15 @@ This project builds a daily percentage-change report for the mutual funds listed
 
 It runs automatically on GitHub Pages every weekday after market close. You can also run it manually from GitHub Actions or locally.
 
+## Daily Email
+
+The workflow can email a short daily summary after each run.
+
+Add these repository secrets in GitHub:
+
+- `GMAIL`: Gmail app password
+- `EMAIL_ADDRESS`: Gmail address used to send and receive the report
+
 ## Update Holdings
 
 Edit `holdings_public.json` when you want to add, remove, or rename a fund.
