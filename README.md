@@ -1,6 +1,6 @@
 # Mutual Fund Daily Change
 
-Live report: https://vipi-n.github.io/mf-daily-report/
+Live report: <a href="https://vipi-n.github.io/mf-daily-report/" target="_blank" rel="noopener noreferrer">https://vipi-n.github.io/mf-daily-report/</a>
 
 This project builds a daily percentage-change report for the mutual funds listed in `holdings_public.json`.
 

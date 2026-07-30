@@ -2155,9 +2155,9 @@ def write_interactive_report(
       --pos: #087f5b;
       --neg: #c92a2a;
       --warn: #b7791f;
-      --accent: #2563eb;
+      --accent: #334155;
       --accent-2: #0f766e;
-      --ink: #17212b;
+      --ink: #111111;
     }}
     * {{ box-sizing: border-box; }}
     body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }}
@@ -2171,11 +2171,9 @@ def write_interactive_report(
     .heroActions {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }}
     .liveLink {{ color: #ffffff; border: 0; border-radius: 8px; padding: 9px 12px; background: var(--accent); font-weight: 760; font-size: 12px; white-space: nowrap; }}
     .heroPanel {{ border: 1px solid var(--line); background: var(--panel-soft); border-radius: 10px; padding: 12px; min-width: 360px; }}
-    .heroMetric {{ display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }}
+    .heroMetric {{ display: block; }}
     .heroMetric .label {{ color: var(--muted); font-size: 11px; font-weight: 760; text-transform: uppercase; }}
     .heroMetric .value {{ font-size: 30px; line-height: 1; font-weight: 820; }}
-    .sparkline {{ height: 34px; display: flex; align-items: end; gap: 4px; justify-content: flex-end; }}
-    .sparkline span {{ width: 7px; min-height: 6px; border-radius: 999px 999px 0 0; background: #2b8a6e; opacity: 0.9; }}
     .heroGrid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }}
     .heroMini {{ border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 9px; min-height: 58px; }}
     .heroMini .label {{ color: var(--muted); font-size: 10px; font-weight: 760; text-transform: uppercase; }}
@@ -2256,47 +2254,47 @@ def write_interactive_report(
     body.viewCards .tableSection {{ display: none; }}
     body.viewTable .cardsSection {{ display: none; }}
     body.dark {{
-      --bg: #0b1117;
-      --panel: #111827;
-      --panel-soft: #162033;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --line: #263244;
+      --bg: #050505;
+      --panel: #0d0d0d;
+      --panel-soft: #151515;
+      --text: #eeeeee;
+      --muted: #a3a3a3;
+      --line: #2a2a2a;
       --pos: #5ce0b0;
       --neg: #ff7f7f;
       --warn: #f4c76d;
-      --accent: #8bb7ff;
-      --accent-2: #8fc7ff;
-      --ink: #0b1117;
+      --accent: #d4d4d4;
+      --accent-2: #a3a3a3;
+      --ink: #050505;
     }}
     body.dark header {{ background: var(--panel); border-color: var(--line); }}
     body.dark .heroPanel, body.dark .heroMini {{ background: var(--panel-soft); border-color: var(--line); }}
     body.dark .heroMini .value {{ color: var(--text); }}
-    body.dark .liveLink {{ background: #2f66d9; color: #fff; }}
+    body.dark .liveLink {{ background: #2a2a2a; color: #fff; }}
     body.dark .toolbar {{ background: var(--panel); border-color: var(--line); box-shadow: none; }}
-    body.dark input, body.dark select {{ background: #101923; color: var(--text); border-color: var(--line); }}
-    body.dark input::placeholder {{ color: #7f91a3; }}
-    body.dark .viewToggle {{ background: #0b1117; border-color: var(--line); }}
-    body.dark .viewToggle button {{ color: #aab8c8; }}
-    body.dark .viewToggle button.active {{ background: #1e293b; color: var(--accent); }}
-    body.dark .chipBtn, body.dark button {{ background: #17212b; color: #cfe4ec; border-color: var(--line); }}
-    body.dark .chipBtn:hover, body.dark button:hover {{ background: #1f2d3a; }}
-    body.dark .chipBtn.active {{ background: rgba(139,183,255,0.14); border-color: rgba(139,183,255,0.4); color: var(--accent); }}
+    body.dark input, body.dark select {{ background: #101010; color: var(--text); border-color: var(--line); }}
+    body.dark input::placeholder {{ color: #737373; }}
+    body.dark .viewToggle {{ background: #050505; border-color: var(--line); }}
+    body.dark .viewToggle button {{ color: #bdbdbd; }}
+    body.dark .viewToggle button.active {{ background: #1d1d1d; color: var(--text); }}
+    body.dark .chipBtn, body.dark button {{ background: #101010; color: #e5e5e5; border-color: var(--line); }}
+    body.dark .chipBtn:hover, body.dark button:hover {{ background: #1a1a1a; }}
+    body.dark .chipBtn.active {{ background: #1f1f1f; border-color: #3a3a3a; color: var(--text); }}
     body.dark .stat, body.dark .fundCard, body.dark .tableWrap, body.dark .detailBox {{ background: var(--panel); border-color: var(--line); box-shadow: none; }}
     body.dark .fundCard {{ background: var(--panel); }}
-    body.dark .fundCard:hover {{ background: #151f2d; }}
-    body.dark .fundCard .name, body.dark .fundCell a {{ color: #9bd4ff; }}
-    body.dark .range, body.dark .bar {{ background: #273545; }}
-    body.dark th, body.dark th.stickyDate, body.dark th.stickyFund {{ background: #1d2935; color: #cdd8e4; box-shadow: inset 0 -1px 0 var(--line); }}
-    body.dark td {{ background: #17212b; border-color: var(--line); }}
-    body.dark tbody tr.mainRow:hover td, body.dark .mainRow.open td, body.dark .details td {{ background: #1a2632; }}
-    body.dark .details {{ background: #1a2632; }}
-    body.dark .detailBox h3 {{ background: #1f2d3a; color: #e5edf3; }}
-    body.dark .pill {{ background: #223142; color: #cdd8e4; }}
+    body.dark .fundCard:hover {{ background: #151515; }}
+    body.dark .fundCard .name, body.dark .fundCell a {{ color: #e5e5e5; }}
+    body.dark .range, body.dark .bar {{ background: #252525; }}
+    body.dark th, body.dark th.stickyDate, body.dark th.stickyFund {{ background: #181818; color: #d4d4d4; box-shadow: inset 0 -1px 0 var(--line); }}
+    body.dark td {{ background: #0d0d0d; border-color: var(--line); }}
+    body.dark tbody tr.mainRow:hover td, body.dark .mainRow.open td, body.dark .details td {{ background: #151515; }}
+    body.dark .details {{ background: #151515; }}
+    body.dark .detailBox h3 {{ background: #181818; color: #eeeeee; }}
+    body.dark .pill {{ background: #1f1f1f; color: #d4d4d4; }}
     body.dark .pill.pos {{ background: rgba(92,224,176,0.13); color: var(--pos); }}
     body.dark .pill.neg {{ background: rgba(255,127,127,0.13); color: var(--neg); }}
     body.dark .pill.warn {{ background: rgba(244,199,109,0.16); color: var(--warn); }}
-    body.dark .watch, body.dark .detailBox ul {{ color: #aebdca; }}
+    body.dark .watch, body.dark .detailBox ul {{ color: #c7c7c7; }}
     body.dark .empty {{ color: var(--muted); }}
     @media (max-width: 900px) {{
       main, header {{ padding-left: 14px; padding-right: 14px; }}
@@ -2328,7 +2326,6 @@ def write_interactive_report(
             <div class="label">Overall move</div>
             <div class="value" id="heroOverall">--</div>
           </div>
-          <div class="sparkline" id="sparkline"></div>
         </div>
         <div class="heroGrid">
           <div class="heroMini">
@@ -2384,8 +2381,7 @@ def write_interactive_report(
     <section class="tableSection">
       <div class="sectionHead">
         <div>
-          <h2>Detailed Table</h2>
-          <p>Sort, expand rows, and inspect contributors or missing holdings.</p>
+          <h2>Holdings</h2>
         </div>
       </div>
       <section class="tableWrap">
@@ -2438,7 +2434,7 @@ def write_interactive_report(
 
     document.body.classList.toggle('noValues', !hasValues);
     document.body.classList.add('viewTable');
-    document.getElementById('generated').textContent = `Generated ${{generatedText}} | ${{report.funds.length}} rows`;
+    document.getElementById('generated').textContent = `Generated ${{generatedText}} | ${{report.funds.length}} holdings`;
 
     function applyTheme(theme) {{
       const dark = theme === 'dark';
@@ -2523,16 +2519,6 @@ def write_interactive_report(
       document.getElementById('heroOverall').textContent = signed(avg);
       document.getElementById('heroBest').innerHTML = best ? `${{esc(fundName(best))}}<br><span class="${{cls(best.estimated_change_pct)}}">${{signed(best.estimated_change_pct)}}</span>` : '--';
       document.getElementById('heroWorst').innerHTML = worst ? `${{esc(fundName(worst))}}<br><span class="${{cls(worst.estimated_change_pct)}}">${{signed(worst.estimated_change_pct)}}</span>` : '--';
-      const maxAbs = Math.max(0.1, ...allRows.map(r => Math.abs(Number(r.estimated_change_pct || 0))));
-      document.getElementById('sparkline').innerHTML = allRows
-        .slice()
-        .sort((a, b) => Number(a.estimated_change_pct || 0) - Number(b.estimated_change_pct || 0))
-        .map(r => {{
-          const move = Number(r.estimated_change_pct || 0);
-          const height = 12 + Math.abs(move) / maxAbs * 40;
-          const color = move >= 0 ? '#70e2bd' : '#ff8a80';
-          return `<span title="${{esc(fundName(r))}} ${{signed(move)}}" style="height:${{height}}px;background:${{color}}"></span>`;
-        }}).join('');
     }}
 
     function renderInsights(rows) {{
@@ -2616,7 +2602,7 @@ def write_interactive_report(
           <div class="detailBox"><h3>Largest Contributors</h3>${{miniTable(f.contributors, 'No priced contributors.')}}</div>
           <div class="detailBox"><h3>Missing Holdings</h3>${{missingTable(f.missing)}}</div>
         </div></td></tr>
-      `; }}).join('') || '<tr><td colspan="9" class="empty">No rows match the current filters.</td></tr>';
+      `; }}).join('') || '<tr><td colspan="9" class="empty">No holdings match the current filters.</td></tr>';
       rowsEl.querySelectorAll('button[data-row]').forEach(btn => btn.addEventListener('click', () => {{
         const row = document.getElementById(`detail-${{btn.dataset.row}}`);
         const main = rowsEl.querySelector(`tr[data-row="${{btn.dataset.row}}"]`);
