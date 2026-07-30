@@ -6,7 +6,9 @@ on:
     branches:
       - main
   schedule:
-    # 13:15 UTC = 18:45 IST. Runs Monday-Friday after Indian market close.
+    # 06:45 UTC = 12:15 IST. Midday update, Monday-Friday.
+    - cron: "45 6 * * 1-5"
+    # 13:15 UTC = 18:45 IST. After-market update, Monday-Friday.
     - cron: "15 13 * * 1-5"
 
 permissions:
