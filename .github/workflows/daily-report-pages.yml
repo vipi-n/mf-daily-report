@@ -34,6 +34,7 @@ jobs:
         run: python3 mf_daily_change.py --input holdings_public.json --no-open
 
       - name: Send email summary
+        continue-on-error: true
         env:
           SMTP_HOST: smtp.gmail.com
           SMTP_PORT: "587"
