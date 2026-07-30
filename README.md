@@ -62,6 +62,7 @@ python3 mf_daily_change.py --days 2
 - Benchmark comparison where available
 - Watchlist flags for large moves or underperformance
 - Expandable details for contributors and missing data
+- Cards/table view toggle and dark mode
 
 The public report does not use invested amounts, so it does not show rupee gain/loss or a money-weighted portfolio return.
 

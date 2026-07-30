@@ -2035,56 +2035,82 @@ def write_interactive_report(
   <style>
     :root {{
       color-scheme: light;
-      --bg: #f6f7f9;
+      --bg: #f3f5f7;
       --panel: #ffffff;
+      --panel-soft: #f8fafb;
       --text: #1f2933;
-      --muted: #64748b;
-      --line: #d8dee8;
+      --muted: #66758a;
+      --line: #d9e1ea;
       --pos: #087f5b;
       --neg: #c92a2a;
-      --accent: #22577a;
+      --warn: #b7791f;
+      --accent: #0f766e;
+      --accent-2: #2f6f9f;
+      --ink: #17212b;
     }}
     * {{ box-sizing: border-box; }}
-    body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(180deg, #eef4f8 0, #f6f7f9 240px); color: var(--text); }}
-    header {{ padding: 24px 28px 18px; background: #182633; color: #f8fafc; border-bottom: 1px solid #243647; }}
-    .hero {{ display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: end; max-width: 1480px; margin: 0 auto; }}
-    h1 {{ margin: 0 0 6px; font-size: 26px; font-weight: 760; letter-spacing: 0; }}
-    .sub {{ color: #b8c5d4; font-size: 13px; }}
-    .liveLink {{ color: #d7ecff; border: 1px solid #476174; border-radius: 999px; padding: 8px 12px; background: rgba(255,255,255,0.06); font-weight: 700; font-size: 12px; white-space: nowrap; }}
-    main {{ padding: 18px 28px 28px; max-width: 1480px; margin: 0 auto; }}
-    .controls {{ display: grid; grid-template-columns: 1.6fr repeat(2, minmax(150px, 220px)); gap: 12px; margin-bottom: 10px; }}
-    input, select {{ width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 10px 11px; background: white; color: var(--text); font-size: 14px; }}
-    .quickbar {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }}
-    .chipBtn {{ border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 11px; cursor: pointer; color: #334155; font-size: 12px; font-weight: 650; }}
-    .chipBtn:hover {{ background: #eef6fb; }}
-    .chipBtn.active {{ background: #e8f3f8; border-color: #9cc9dd; color: var(--accent); }}
+    body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }}
+    body::before {{ content: ""; position: fixed; inset: 0 0 auto; height: 340px; background: radial-gradient(circle at 18% 20%, rgba(15, 118, 110, 0.18), transparent 28%), radial-gradient(circle at 86% 14%, rgba(47, 111, 159, 0.16), transparent 30%), linear-gradient(135deg, #17212b 0%, #243240 54%, #314153 100%); z-index: -1; }}
+    header {{ padding: 26px 28px 18px; color: #f8fafc; }}
+    .hero {{ display: grid; grid-template-columns: 1fr minmax(360px, 0.9fr); gap: 22px; align-items: stretch; max-width: 1500px; margin: 0 auto; }}
+    .heroTitle {{ display: flex; flex-direction: column; justify-content: space-between; min-height: 176px; }}
+    .eyebrow {{ width: fit-content; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.08); border-radius: 999px; padding: 7px 10px; color: #dce7ef; font-size: 12px; font-weight: 760; }}
+    h1 {{ margin: 14px 0 8px; font-size: clamp(30px, 4vw, 54px); line-height: 1.03; font-weight: 840; letter-spacing: 0; max-width: 820px; }}
+    .sub {{ color: #bfd0dd; font-size: 14px; }}
+    .heroActions {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }}
+    .liveLink {{ color: #071317; border: 0; border-radius: 999px; padding: 10px 14px; background: #b7f4df; font-weight: 800; font-size: 13px; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.16); }}
+    .heroPanel {{ border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.09); border-radius: 18px; padding: 18px; backdrop-filter: blur(16px); box-shadow: 0 22px 60px rgba(0,0,0,0.22); }}
+    .heroMetric {{ display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; }}
+    .heroMetric .label {{ color: #bfd0dd; font-size: 12px; font-weight: 760; text-transform: uppercase; }}
+    .heroMetric .value {{ font-size: 46px; line-height: 1; font-weight: 860; }}
+    .sparkline {{ height: 54px; display: flex; align-items: end; gap: 5px; justify-content: flex-end; }}
+    .sparkline span {{ width: 9px; min-height: 8px; border-radius: 999px 999px 0 0; background: #70e2bd; opacity: 0.95; }}
+    .heroGrid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }}
+    .heroMini {{ border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; background: rgba(255,255,255,0.08); padding: 12px; min-height: 82px; }}
+    .heroMini .label {{ color: #bfd0dd; font-size: 11px; font-weight: 760; text-transform: uppercase; }}
+    .heroMini .value {{ margin-top: 6px; font-size: 17px; font-weight: 820; color: #fff; line-height: 1.25; }}
+    main {{ padding: 0 28px 30px; max-width: 1500px; margin: 0 auto; }}
+    .toolbar {{ margin-top: 8px; border: 1px solid rgba(217,225,234,0.85); background: rgba(255,255,255,0.88); backdrop-filter: blur(18px); border-radius: 16px; padding: 14px; box-shadow: 0 18px 50px rgba(31,41,51,0.10); }}
+    .controls {{ display: grid; grid-template-columns: 1.7fr minmax(150px, 220px) minmax(170px, 230px) auto; gap: 10px; margin-bottom: 12px; }}
+    input, select {{ width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px 13px; background: white; color: var(--text); font-size: 14px; outline: none; }}
+    input:focus, select:focus {{ border-color: #74b7a6; box-shadow: 0 0 0 3px rgba(15,118,110,0.12); }}
+    .viewToggle {{ display: inline-flex; border: 1px solid var(--line); background: #edf2f6; border-radius: 12px; padding: 3px; gap: 3px; height: 44px; }}
+    .viewToggle button {{ border: 0; border-radius: 9px; padding: 8px 12px; background: transparent; color: #465568; font-weight: 800; }}
+    .viewToggle button.active {{ background: #fff; color: var(--accent); box-shadow: 0 1px 4px rgba(31,41,51,0.10); }}
+    .quickbar {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }}
+    .chipBtn {{ border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 12px; font-weight: 750; }}
+    .chipBtn:hover {{ background: #f2f7f6; }}
+    .chipBtn.active {{ background: #dff5ef; border-color: #8ed5c1; color: var(--accent); }}
     .spacer {{ flex: 1; min-width: 16px; }}
-    .stats {{ display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }}
-    .stat {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }}
-    .stat .label {{ color: var(--muted); font-size: 12px; margin-bottom: 5px; }}
-    .stat .value {{ font-size: 22px; font-weight: 700; }}
+    .stats {{ display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }}
+    .stat {{ background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: 0 10px 30px rgba(31,41,51,0.07); }}
+    .stat .label {{ color: var(--muted); font-size: 12px; margin-bottom: 7px; font-weight: 760; text-transform: uppercase; }}
+    .stat .value {{ font-size: 26px; font-weight: 830; }}
     .stat .sub {{ color: var(--muted); font-size: 12px; margin-top: 4px; }}
-    .insights {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0 0 16px; }}
-    .fundCard {{ border: 1px solid var(--line); border-left-width: 4px; background: #fff; border-radius: 8px; padding: 11px 12px; cursor: pointer; min-height: 96px; display: grid; gap: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }}
-    .fundCard:hover {{ transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08); }}
-    .fundCard.posBorder {{ border-left-color: var(--pos); }}
-    .fundCard.negBorder {{ border-left-color: var(--neg); }}
+    .sectionHead {{ display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 22px 0 10px; }}
+    .sectionHead h2 {{ margin: 0; font-size: 18px; }}
+    .sectionHead p {{ margin: 4px 0 0; color: var(--muted); font-size: 13px; }}
+    .insights {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 0 0 18px; }}
+    .fundCard {{ border: 1px solid var(--line); background: linear-gradient(180deg, #fff 0%, #fbfcfd 100%); border-radius: 16px; padding: 16px; cursor: pointer; min-height: 142px; display: grid; gap: 13px; box-shadow: 0 12px 32px rgba(31,41,51,0.07); position: relative; overflow: hidden; }}
+    .fundCard::before {{ content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--pos); }}
+    .fundCard.negBorder::before {{ background: var(--neg); }}
+    .fundCard:hover {{ transform: translateY(-3px); box-shadow: 0 18px 42px rgba(31,41,51,0.13); border-color: #b8c8d8; }}
     .fundCard .top {{ display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }}
-    .fundCard .name {{ font-size: 12px; font-weight: 760; color: #1f5f84; line-height: 1.25; }}
-    .fundCard .move {{ font-size: 18px; font-weight: 800; white-space: nowrap; }}
-    .range {{ height: 8px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
+    .fundCard .name {{ font-size: 14px; font-weight: 830; color: #1f5f84; line-height: 1.2; padding-left: 2px; }}
+    .fundCard .move {{ font-size: 26px; font-weight: 880; white-space: nowrap; }}
+    .range {{ height: 10px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
     .range span {{ display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b8a6e, #2f9e44); }}
     .fundCard.negBorder .range span {{ background: linear-gradient(90deg, #e03131, #f08c00); }}
-    .metaLine {{ display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }}
-    .tableWrap {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: calc(100vh - 270px); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }}
-    table {{ width: 100%; min-width: 1360px; border-collapse: separate; border-spacing: 0; font-size: 13px; }}
-    th, td {{ padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; background: #fff; }}
-    th {{ position: sticky; top: 0; z-index: 3; text-align: left; color: #334155; background: #eef2f7; user-select: none; cursor: pointer; white-space: nowrap; box-shadow: inset 0 -1px 0 var(--line); }}
+    .metaLine {{ display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 650; }}
+    .tableWrap {{ background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: auto; max-height: calc(100vh - 260px); box-shadow: 0 12px 32px rgba(31,41,51,0.07); }}
+    table {{ width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; font-size: 13px; }}
+    th, td {{ padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; background: #fff; }}
+    th {{ position: sticky; top: 0; z-index: 3; text-align: left; color: #334155; background: #f1f5f8; user-select: none; cursor: pointer; white-space: nowrap; box-shadow: inset 0 -1px 0 var(--line); }}
     th.sortActive::after {{ content: attr(data-dir); margin-left: 6px; color: var(--accent); }}
     tbody tr.mainRow:hover td {{ background: #f8fafc; }}
     .stickyDate {{ position: sticky; left: 0; z-index: 2; min-width: 118px; }}
-    .stickyFund {{ position: sticky; left: 118px; z-index: 2; min-width: 280px; max-width: 340px; box-shadow: 1px 0 0 var(--line); }}
-    th.stickyDate, th.stickyFund {{ z-index: 4; background: #eef2f7; }}
+    .stickyFund {{ position: sticky; left: 118px; z-index: 2; min-width: 320px; max-width: 380px; box-shadow: 1px 0 0 var(--line); }}
+    th.stickyDate, th.stickyFund {{ z-index: 4; background: #f1f5f8; }}
     .mainRow.open td {{ background: #f8fbfd; }}
     .num {{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }}
     .dateCell {{ white-space: nowrap; }}
@@ -2093,7 +2119,7 @@ def write_interactive_report(
     .pos {{ color: var(--pos); font-weight: 650; }}
     .neg {{ color: var(--neg); font-weight: 650; }}
     .muted {{ color: var(--muted); }}
-    .pill {{ display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 7px; background: #edf2f7; color: #475569; font-size: 11px; font-weight: 700; white-space: nowrap; }}
+    .pill {{ display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; background: #edf2f7; color: #475569; font-size: 11px; font-weight: 780; white-space: nowrap; }}
     .pill.pos {{ background: #e6f4ef; color: var(--pos); }}
     .pill.neg {{ background: #fdecec; color: var(--neg); }}
     .pill.warn {{ background: #fff4d6; color: #8a5a00; }}
@@ -2101,8 +2127,8 @@ def write_interactive_report(
     .bar {{ height: 8px; min-width: 92px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
     .bar span {{ display: block; height: 100%; border-radius: inherit; background: #2b8a6e; }}
     .barWrap {{ display: grid; gap: 4px; justify-items: end; }}
-    button {{ border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 7px 10px; cursor: pointer; color: var(--accent); }}
-    button:hover {{ background: #eef6fb; }}
+    button {{ border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 11px; cursor: pointer; color: var(--accent); font-weight: 760; }}
+    button:hover {{ background: #f2f7f6; }}
     .details {{ display: none; background: #fbfcfe; }}
     .details.open {{ display: table-row; }}
     .details td {{ background: #fbfcfe; }}
@@ -2116,9 +2142,51 @@ def write_interactive_report(
     .empty {{ padding: 18px; color: var(--muted); }}
     body.noValues .valueCol {{ display: none; }}
     body.noValues table {{ min-width: 1080px; }}
+    body.viewCards .tableSection {{ display: none; }}
+    body.viewTable .cardsSection {{ display: none; }}
+    body.dark {{
+      --bg: #0f1720;
+      --panel: #17212b;
+      --panel-soft: #1d2935;
+      --text: #e5edf3;
+      --muted: #9cadbd;
+      --line: #2c3b49;
+      --pos: #5ce0b0;
+      --neg: #ff7f7f;
+      --warn: #f4c76d;
+      --accent: #62d7bd;
+      --accent-2: #8fc7ff;
+      --ink: #0b1117;
+    }}
+    body.dark::before {{ background: radial-gradient(circle at 18% 20%, rgba(92,224,176,0.14), transparent 28%), radial-gradient(circle at 86% 14%, rgba(143,199,255,0.12), transparent 30%), linear-gradient(135deg, #071017 0%, #111d28 55%, #182634 100%); }}
+    body.dark .toolbar {{ background: rgba(23,33,43,0.88); border-color: rgba(80,99,118,0.7); box-shadow: 0 18px 50px rgba(0,0,0,0.22); }}
+    body.dark input, body.dark select {{ background: #101923; color: var(--text); border-color: var(--line); }}
+    body.dark input::placeholder {{ color: #7f91a3; }}
+    body.dark .viewToggle {{ background: #101923; border-color: var(--line); }}
+    body.dark .viewToggle button {{ color: #aab8c8; }}
+    body.dark .viewToggle button.active {{ background: #223142; color: var(--accent); }}
+    body.dark .chipBtn, body.dark button {{ background: #17212b; color: #cfe4ec; border-color: var(--line); }}
+    body.dark .chipBtn:hover, body.dark button:hover {{ background: #1f2d3a; }}
+    body.dark .chipBtn.active {{ background: rgba(92,224,176,0.13); border-color: rgba(92,224,176,0.45); color: var(--accent); }}
+    body.dark .stat, body.dark .fundCard, body.dark .tableWrap, body.dark .detailBox {{ background: #17212b; border-color: var(--line); box-shadow: 0 12px 34px rgba(0,0,0,0.22); }}
+    body.dark .fundCard {{ background: linear-gradient(180deg, #17212b 0%, #141e28 100%); }}
+    body.dark .fundCard .name, body.dark .fundCell a {{ color: #9bd4ff; }}
+    body.dark .range, body.dark .bar {{ background: #273545; }}
+    body.dark th, body.dark th.stickyDate, body.dark th.stickyFund {{ background: #1d2935; color: #cdd8e4; box-shadow: inset 0 -1px 0 var(--line); }}
+    body.dark td {{ background: #17212b; border-color: var(--line); }}
+    body.dark tbody tr.mainRow:hover td, body.dark .mainRow.open td, body.dark .details td {{ background: #1a2632; }}
+    body.dark .details {{ background: #1a2632; }}
+    body.dark .detailBox h3 {{ background: #1f2d3a; color: #e5edf3; }}
+    body.dark .pill {{ background: #223142; color: #cdd8e4; }}
+    body.dark .pill.pos {{ background: rgba(92,224,176,0.13); color: var(--pos); }}
+    body.dark .pill.neg {{ background: rgba(255,127,127,0.13); color: var(--neg); }}
+    body.dark .pill.warn {{ background: rgba(244,199,109,0.16); color: var(--warn); }}
+    body.dark .watch, body.dark .detailBox ul {{ color: #aebdca; }}
+    body.dark .empty {{ color: var(--muted); }}
     @media (max-width: 900px) {{
       main, header {{ padding-left: 14px; padding-right: 14px; }}
-      .hero, .controls, .stats, .detailGrid {{ grid-template-columns: 1fr; }}
+      .hero, .controls, .stats, .detailGrid, .heroGrid {{ grid-template-columns: 1fr; }}
+      h1 {{ font-size: 34px; }}
       .tableWrap {{ max-height: none; }}
       .stickyDate, .stickyFund {{ position: static; min-width: auto; max-width: none; box-shadow: none; }}
       th:nth-child(7), td:nth-child(7), th:nth-child(9), td:nth-child(9) {{ display: none; }}
@@ -2128,56 +2196,103 @@ def write_interactive_report(
 <body>
   <header>
     <div class="hero">
-      <div>
-        <h1>Mutual Fund Daily Change</h1>
-        <div class="sub" id="generated"></div>
+      <div class="heroTitle">
+        <div>
+          <div class="eyebrow">Daily fund monitor</div>
+          <h1>Mutual Fund Daily Change</h1>
+          <div class="sub" id="generated"></div>
+        </div>
+        <div class="heroActions">
+          <a class="liveLink" href="https://vipi-n.github.io/mf-daily-report/" target="_blank">Open live report</a>
+          <button class="chipBtn" id="themeToggle" type="button">Dark mode</button>
+        </div>
       </div>
-      <a class="liveLink" href="https://vipi-n.github.io/mf-daily-report/" target="_blank">Live report</a>
+      <aside class="heroPanel">
+        <div class="heroMetric">
+          <div>
+            <div class="label">Overall move</div>
+            <div class="value" id="heroOverall">--</div>
+          </div>
+          <div class="sparkline" id="sparkline"></div>
+        </div>
+        <div class="heroGrid">
+          <div class="heroMini">
+            <div class="label">Best fund</div>
+            <div class="value" id="heroBest">--</div>
+          </div>
+          <div class="heroMini">
+            <div class="label">Weakest fund</div>
+            <div class="value" id="heroWorst">--</div>
+          </div>
+        </div>
+      </aside>
     </div>
   </header>
   <main>
-    <section class="controls">
-      <input id="search" placeholder="Search fund or contributor">
-      <select id="dateFilter"></select>
-      <select id="sortFilter">
-        <option value="fund">Sort: Fund</option>
-        <option value="change_desc">Sort: Highest change</option>
-        <option value="change_asc">Sort: Lowest change</option>
-        <option class="valueCol" value="value_change_desc">Sort: Highest Rs change</option>
-        <option class="valueCol" value="value_change_asc">Sort: Lowest Rs change</option>
-        <option value="missing_desc">Sort: Missing weight</option>
-      </select>
-    </section>
-    <section class="quickbar" id="quickbar">
-      <button class="chipBtn active" data-filter="all">All</button>
-      <button class="chipBtn" data-filter="gainers">Gainers</button>
-      <button class="chipBtn" data-filter="losers">Losers</button>
-      <button class="chipBtn" data-filter="watchlist">Watchlist</button>
-      <button class="chipBtn" data-filter="missing">Missing Data</button>
-      <span class="spacer"></span>
-      <button class="chipBtn" id="clearFilters" type="button">Reset</button>
-      <button class="chipBtn" id="expandAll" type="button">Expand All</button>
+    <section class="toolbar">
+      <section class="controls">
+        <input id="search" placeholder="Search fund or contributor">
+        <select id="dateFilter"></select>
+        <select id="sortFilter">
+          <option value="fund">Sort: Fund</option>
+          <option value="change_desc">Sort: Highest change</option>
+          <option value="change_asc">Sort: Lowest change</option>
+          <option class="valueCol" value="value_change_desc">Sort: Highest Rs change</option>
+          <option class="valueCol" value="value_change_asc">Sort: Lowest Rs change</option>
+          <option value="missing_desc">Sort: Missing weight</option>
+        </select>
+        <div class="viewToggle" aria-label="View mode">
+          <button id="viewCards" type="button" class="active">Cards</button>
+          <button id="viewTable" type="button">Table</button>
+        </div>
+      </section>
+      <section class="quickbar" id="quickbar">
+        <button class="chipBtn active" data-filter="all">All</button>
+        <button class="chipBtn" data-filter="gainers">Gainers</button>
+        <button class="chipBtn" data-filter="losers">Losers</button>
+        <button class="chipBtn" data-filter="watchlist">Watchlist</button>
+        <button class="chipBtn" data-filter="missing">Missing Data</button>
+        <span class="spacer"></span>
+        <button class="chipBtn" id="clearFilters" type="button">Reset</button>
+        <button class="chipBtn" id="expandAll" type="button">Expand All</button>
+      </section>
     </section>
     <section class="stats" id="stats"></section>
-    <section class="insights" id="insights"></section>
-    <section class="tableWrap">
-      <table>
-        <thead>
-          <tr>
-            <th data-sort="analysis_date" class="stickyDate">Date</th>
-            <th data-sort="fund" class="stickyFund">Fund</th>
-            <th data-sort="invested_value" class="num valueCol">Invested</th>
-            <th data-sort="estimated_value_change" class="num valueCol">Est Rs</th>
-            <th data-sort="estimated_change_pct" class="num">Est %</th>
-            <th data-sort="benchmark_change_pct" class="num">Benchmark</th>
-            <th data-sort="priced_weight_pct" class="num">Priced Wt</th>
-            <th data-sort="missing_weight_pct" class="num">Missing Wt</th>
-            <th>Watchlist</th>
-            <th>Details</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
+    <section class="cardsSection">
+      <div class="sectionHead">
+        <div>
+          <h2>Fund Board</h2>
+          <p>Click a card to focus the table on that fund.</p>
+        </div>
+      </div>
+      <section class="insights" id="insights"></section>
+    </section>
+    <section class="tableSection">
+      <div class="sectionHead">
+        <div>
+          <h2>Detailed Table</h2>
+          <p>Sort, expand rows, and inspect contributors or missing holdings.</p>
+        </div>
+      </div>
+      <section class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="analysis_date" class="stickyDate">Date</th>
+              <th data-sort="fund" class="stickyFund">Fund</th>
+              <th data-sort="invested_value" class="num valueCol">Invested</th>
+              <th data-sort="estimated_value_change" class="num valueCol">Est Rs</th>
+              <th data-sort="estimated_change_pct" class="num">Est %</th>
+              <th data-sort="benchmark_change_pct" class="num">Benchmark</th>
+              <th data-sort="priced_weight_pct" class="num">Priced Wt</th>
+              <th data-sort="missing_weight_pct" class="num">Missing Wt</th>
+              <th>Watchlist</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </section>
     </section>
   </main>
   <script id="report-data" type="application/json">{data_json}</script>
@@ -2188,11 +2303,15 @@ def write_interactive_report(
     const dateEl = document.getElementById('dateFilter');
     const sortEl = document.getElementById('sortFilter');
     const insightsEl = document.getElementById('insights');
+    const viewCardsEl = document.getElementById('viewCards');
+    const viewTableEl = document.getElementById('viewTable');
+    const themeToggleEl = document.getElementById('themeToggle');
     const hasValues = report.funds.some(f => f.invested_value !== null && f.invested_value !== undefined && f.estimated_value_change !== null && f.estimated_value_change !== undefined);
     let sortKey = 'fund';
     let sortDir = 1;
     let activeQuick = 'all';
     let expandedAll = false;
+    let viewMode = 'cards';
 
     const pct = v => v === null || v === undefined || v === '' ? '' : `${{Number(v).toFixed(2)}}%`;
     const money = v => v === null || v === undefined || v === '' ? '' : `Rs ${{Math.round(Number(v)).toLocaleString('en-IN')}}`;
@@ -2205,7 +2324,18 @@ def write_interactive_report(
     const generatedText = `${{String(generatedDate.getDate()).padStart(2, '0')}}-${{String(generatedDate.getMonth() + 1).padStart(2, '0')}}-${{generatedDate.getFullYear()}}, ${{generatedDate.toLocaleTimeString()}}`;
 
     document.body.classList.toggle('noValues', !hasValues);
+    document.body.classList.add('viewCards');
     document.getElementById('generated').textContent = `Generated ${{generatedText}} | ${{report.funds.length}} rows`;
+
+    function applyTheme(theme) {{
+      const dark = theme === 'dark';
+      document.body.classList.toggle('dark', dark);
+      themeToggleEl.textContent = dark ? 'Light mode' : 'Dark mode';
+      themeToggleEl.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    }}
+
+    const storedTheme = localStorage.getItem('mf-report-theme');
+    applyTheme(storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
     function populateFilters() {{
       const dates = [...new Map(report.funds.map(f => [f.analysis_date_iso, f.analysis_date])).entries()].sort((a, b) => a[0].localeCompare(b[0]));
@@ -2272,17 +2402,40 @@ def write_interactive_report(
       `;
     }}
 
+    function renderHero(rows) {{
+      const allRows = rows.length ? rows : report.funds;
+      const avg = allRows.length ? allRows.reduce((s, r) => s + Number(r.estimated_change_pct || 0), 0) / allRows.length : 0;
+      const ranked = [...allRows].sort((a, b) => Number(b.estimated_change_pct || 0) - Number(a.estimated_change_pct || 0));
+      const best = ranked[0];
+      const worst = ranked[ranked.length - 1];
+      document.getElementById('heroOverall').className = `value ${{cls(avg)}}`;
+      document.getElementById('heroOverall').textContent = signed(avg);
+      document.getElementById('heroBest').innerHTML = best ? `${{esc(fundName(best))}}<br><span class="${{cls(best.estimated_change_pct)}}">${{signed(best.estimated_change_pct)}}</span>` : '--';
+      document.getElementById('heroWorst').innerHTML = worst ? `${{esc(fundName(worst))}}<br><span class="${{cls(worst.estimated_change_pct)}}">${{signed(worst.estimated_change_pct)}}</span>` : '--';
+      const maxAbs = Math.max(0.1, ...allRows.map(r => Math.abs(Number(r.estimated_change_pct || 0))));
+      document.getElementById('sparkline').innerHTML = allRows
+        .slice()
+        .sort((a, b) => Number(a.estimated_change_pct || 0) - Number(b.estimated_change_pct || 0))
+        .map(r => {{
+          const move = Number(r.estimated_change_pct || 0);
+          const height = 12 + Math.abs(move) / maxAbs * 40;
+          const color = move >= 0 ? '#70e2bd' : '#ff8a80';
+          return `<span title="${{esc(fundName(r))}} ${{signed(move)}}" style="height:${{height}}px;background:${{color}}"></span>`;
+        }}).join('');
+    }}
+
     function renderInsights(rows) {{
       if (!rows.length) {{
         insightsEl.innerHTML = '';
         return;
       }}
       const maxAbs = Math.max(0.1, ...rows.map(r => Math.abs(Number(r.estimated_change_pct || 0))));
-      const ranked = [...rows].sort((a, b) => Math.abs(Number(b.estimated_change_pct || 0)) - Math.abs(Number(a.estimated_change_pct || 0))).slice(0, 8);
+      const ranked = [...rows].sort((a, b) => Math.abs(Number(b.estimated_change_pct || 0)) - Math.abs(Number(a.estimated_change_pct || 0)));
       insightsEl.innerHTML = ranked.map(f => {{
         const move = Number(f.estimated_change_pct || 0);
         const width = Math.max(6, Math.abs(move) / maxAbs * 100);
-        const benchmark = f.benchmark_change_pct == null ? 'Benchmark n/a' : `Benchmark ${{signed(f.benchmark_change_pct)}}`;
+        const benchmark = f.benchmark_change_pct == null ? `${{f.benchmark_name || 'Benchmark'}} pending` : `${{f.benchmark_name || 'Benchmark'}} ${{signed(f.benchmark_change_pct)}}`;
+        const watch = (f.watchlist_notes || []).length ? '<span class="pill warn">Watchlist</span>' : '';
         return `
           <article class="fundCard ${{move >= 0 ? 'posBorder' : 'negBorder'}}" data-fund="${{esc(fundName(f))}}">
             <div class="top">
@@ -2291,6 +2444,7 @@ def write_interactive_report(
             </div>
             <div class="range"><span style="width:${{width}}%"></span></div>
             <div class="metaLine"><span>${{esc(benchmark)}}</span><span>Priced ${{pct(f.priced_weight_pct)}}</span></div>
+            <div class="fundMeta">${{watch}}<span class="pill">${{esc(f.holdings_month || 'Latest data')}}</span></div>
           </article>
         `;
       }}).join('');
@@ -2323,6 +2477,7 @@ def write_interactive_report(
 
     function render() {{
       const rows = filteredRows();
+      renderHero(rows);
       renderStats(rows);
       renderInsights(rows);
       renderSortState();
@@ -2394,7 +2549,22 @@ def write_interactive_report(
       document.querySelectorAll('#quickbar .chipBtn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
       render();
     }});
+    function setViewMode(mode) {{
+      viewMode = mode;
+      document.body.classList.toggle('viewCards', mode === 'cards');
+      document.body.classList.toggle('viewTable', mode === 'table');
+      viewCardsEl.classList.toggle('active', mode === 'cards');
+      viewTableEl.classList.toggle('active', mode === 'table');
+    }}
+    viewCardsEl.addEventListener('click', () => setViewMode('cards'));
+    viewTableEl.addEventListener('click', () => setViewMode('table'));
+    themeToggleEl.addEventListener('click', () => {{
+      const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+      localStorage.setItem('mf-report-theme', next);
+      applyTheme(next);
+    }});
     populateFilters();
+    setViewMode('cards');
     render();
   </script>
 </body>
