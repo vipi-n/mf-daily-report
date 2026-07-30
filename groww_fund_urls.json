@@ -1,0 +1,11 @@
+{
+  "_comment": "Optional. Key by fund ISIN or exact fund name. Value is Groww mutual fund URL.",
+  "INF179K01XQ0": "https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth",
+  "INF109KC1U50": "https://groww.in/mutual-funds/icici-prudential-nasdaq-100-index-fund-direct-growth",
+  "INF247L01445": "https://groww.in/mutual-funds/motilal-oswal-most-focused-midcap-30-fund-direct-growth",
+  "INF879O01027": "https://groww.in/mutual-funds/parag-parikh-long-term-value-fund-direct-growth",
+  "INF966L01887": "https://groww.in/mutual-funds/quant-mid-cap-fund-direct-growth",
+  "INF966L01689": "https://groww.in/mutual-funds/quant-small-cap-fund-direct-plan-growth",
+  "INF789F1AUT5": "https://groww.in/mutual-funds/uti-nifty200-momentum-30-index-fund-direct-growth",
+  "INF789F01XA0": "https://groww.in/mutual-funds/uti-nifty-fund-direct-growth"
+}

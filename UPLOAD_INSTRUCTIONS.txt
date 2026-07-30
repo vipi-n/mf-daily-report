@@ -1,0 +1,13 @@
+Upload the CONTENTS of this folder to your GitHub repository root.
+
+Important:
+- Upload the hidden .github folder too. It contains the GitHub Actions workflow.
+- On macOS Finder, press Cmd + Shift + . to show hidden files/folders.
+- Do not upload ../holdings.xlsx because it contains private invested amounts.
+- Do not upload ../reports, ../.mf_change_cache, ../node_modules, or ../__pycache__.
+
+After upload:
+1. In GitHub repo Settings -> Pages, set Source to GitHub Actions.
+2. Go to Actions -> Build and publish mutual fund report -> Run workflow.
+
+The workflow uses holdings_public.xlsx and publishes percentage-only output.

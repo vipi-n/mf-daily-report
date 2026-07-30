@@ -1,0 +1,15 @@
+{
+  "_comment": "Optional. Key by fund ISIN or exact fund name. Sources: finology_index, google_finance, groww_page, manual. Set disabled=true to use holdings instead.",
+  "INF789F01XA0": {
+    "name": "NIFTY 50",
+    "source": "finology_index",
+    "index_name": "Nifty 50",
+    "url": "https://ticker.finology.in/market/index/nse"
+  },
+  "INF789F1AUT5": {
+    "name": "NIFTY200 Momentum 30",
+    "source": "finology_index",
+    "index_name": "Nifty200 Momentum 30",
+    "url": "https://ticker.finology.in/market/index/nse"
+  }
+}

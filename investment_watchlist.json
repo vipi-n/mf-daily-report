@@ -1,0 +1,77 @@
+{
+  "_comment": "Informational flags only, not buy/sell advice. Add PE values manually if you want PE discount checks; live PE scraping is intentionally not assumed reliable.",
+  "rules": {
+    "significant_down_pct": -1.0,
+    "very_significant_down_pct": -2.0,
+    "low_priced_weight_pct": 80.0,
+    "pe_discount_pct": 10.0,
+    "underperform_warn_pct": -0.75,
+    "underperform_bad_pct": -1.5
+  },
+  "tracking_benchmarks": {
+    "INF179K01XQ0": {
+      "name": "Nifty Midcap 150",
+      "source": "finology_index",
+      "index_name": "Nifty Midcap 150",
+      "url": "https://ticker.finology.in/market/index/nse"
+    },
+    "INF247L01445": {
+      "name": "Nifty Midcap 150",
+      "source": "finology_index",
+      "index_name": "Nifty Midcap 150",
+      "url": "https://ticker.finology.in/market/index/nse"
+    },
+    "INF966L01887": {
+      "name": "Nifty Midcap 150",
+      "source": "finology_index",
+      "index_name": "Nifty Midcap 150",
+      "url": "https://ticker.finology.in/market/index/nse"
+    },
+    "INF966L01689": {
+      "name": "Nifty Smallcap 250",
+      "source": "finology_index",
+      "index_name": "Nifty Smallcap 250",
+      "url": "https://ticker.finology.in/market/index/nse"
+    },
+    "INF879O01027": {
+      "name": "Nifty 500",
+      "source": "finology_index",
+      "index_name": "Nifty 500",
+      "url": "https://ticker.finology.in/market/index/nse"
+    },
+    "INF109KC1U50": {
+      "name": "NASDAQ 100",
+      "source": "google_finance",
+      "google_symbol": "NDX:INDEXNASDAQ",
+      "url": "https://www.google.com/finance/quote/NDX:INDEXNASDAQ?hl=en"
+    },
+    "INF789F01XA0": {
+      "name": "NIFTY 50",
+      "source": "finology_index",
+      "index_name": "Nifty 50",
+      "url": "https://ticker.finology.in/market/index/nse"
+    },
+    "INF789F1AUT5": {
+      "name": "NIFTY200 Momentum 30",
+      "source": "finology_index",
+      "index_name": "Nifty200 Momentum 30",
+      "url": "https://ticker.finology.in/market/index/nse"
+    }
+  },
+  "valuations": {
+    "INF789F01XA0": {
+      "tracking_index": "NIFTY 50",
+      "fund_pe": null,
+      "tracking_index_pe": null,
+      "as_of": "",
+      "source": ""
+    },
+    "INF789F1AUT5": {
+      "tracking_index": "NIFTY200 Momentum 30",
+      "fund_pe": null,
+      "tracking_index_pe": null,
+      "as_of": "",
+      "source": ""
+    }
+  }
+}

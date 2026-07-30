@@ -1,0 +1,3 @@
+{
+  "_comment": "Optional. Key by fund ISIN or exact fund name. Example: {'INF...': {'family_id': 8292, 'scheme_code': 122640}}"
+}
