@@ -3,7 +3,7 @@
 Estimate daily mutual-fund movement from latest disclosed holdings.
 
 Data sources:
-- holdings.xlsx in this folder: your current mutual fund list.
+- holdings_public.json in this folder: your public mutual fund list.
 - Groww: latest displayed mutual-fund holdings and current stock 1D changes.
 - AMFI: official historical NAV movement for older dates.
 - NSE daily index archive and Finology/Google Finance: selected index benchmark moves.
@@ -29,12 +29,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
-import zipfile
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-from xml.etree import ElementTree as ET
 
 try:
     from zoneinfo import ZoneInfo
@@ -273,11 +271,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Estimate each non-arbitrage mutual fund's daily % move from disclosed holdings."
     )
-    parser.add_argument("--xlsx", default="holdings.xlsx", help="Path to the holdings workbook.")
+    parser.add_argument("--input", default="holdings_public.json", help="Path to holdings JSON file.")
     parser.add_argument("--reports-dir", default="reports", help="Directory for CSV/JSON reports.")
     parser.add_argument("--cache-dir", default=".mf_change_cache", help="Directory for cached API responses.")
     parser.add_argument("--include-arbitrage", action="store_true", help="Include arbitrage funds too.")
-    parser.add_argument("--list-funds", action="store_true", help="List parsed workbook funds and exit without network calls.")
+    parser.add_argument("--list-funds", action="store_true", help="List parsed JSON funds and exit without network calls.")
     parser.add_argument(
         "--source",
         choices=["groww", "mfdata", "groww-mfdata"],
@@ -512,122 +510,40 @@ def append_estimate(estimates: list[FundEstimate], estimate: FundEstimate, watch
     estimates.append(finalize_estimate(estimate, watchlist_config, cache))
 
 
-def xlsx_rows(path: Path) -> list[list[Any]]:
-    """Read the first worksheet from xlsx using only the standard library."""
-    ns = {
-        "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
-        "rel": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        "pkgrel": "http://schemas.openxmlformats.org/package/2006/relationships",
-    }
-    with zipfile.ZipFile(path) as zf:
-        shared: list[str] = []
-        if "xl/sharedStrings.xml" in zf.namelist():
-            root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
-            for si in root.findall("main:si", ns):
-                parts = [t.text or "" for t in si.findall(".//main:t", ns)]
-                shared.append("".join(parts))
-
-        workbook = ET.fromstring(zf.read("xl/workbook.xml"))
-        first_sheet = workbook.find("main:sheets/main:sheet", ns)
-        if first_sheet is None:
-            return []
-        rel_id = first_sheet.attrib.get(f"{{{ns['rel']}}}id")
-        rels = ET.fromstring(zf.read("xl/_rels/workbook.xml.rels"))
-        target = None
-        for rel in rels.findall("pkgrel:Relationship", ns):
-            if rel.attrib.get("Id") == rel_id:
-                target = rel.attrib["Target"]
-                break
-        if not target:
-            return []
-        target = target.lstrip("/")
-        sheet_path = target if target.startswith("xl/") else "xl/" + target
-        sheet = ET.fromstring(zf.read(sheet_path))
-
-    rows: list[list[Any]] = []
-    for row in sheet.findall(".//main:sheetData/main:row", ns):
-        values: list[Any] = []
-        for cell in row.findall("main:c", ns):
-            ref = cell.attrib.get("r", "")
-            col_letters = re.sub(r"\d+", "", ref)
-            col_idx = letters_to_index(col_letters)
-            while len(values) < col_idx:
-                values.append(None)
-            values.append(read_cell(cell, shared, ns))
-        rows.append(values)
-    return rows
-
-
-def letters_to_index(letters: str) -> int:
-    value = 0
-    for char in letters:
-        value = value * 26 + ord(char.upper()) - ord("A") + 1
-    return max(value - 1, 0)
-
-
-def read_cell(cell: ET.Element, shared: list[str], ns: dict[str, str]) -> Any:
-    cell_type = cell.attrib.get("t")
-    if cell_type == "inlineStr":
-        parts = [t.text or "" for t in cell.findall(".//main:t", ns)]
-        return "".join(parts)
-    value_el = cell.find("main:v", ns)
-    if value_el is None or value_el.text is None:
-        return None
-    raw = value_el.text
-    if cell_type == "s":
-        idx = int(raw)
-        return shared[idx] if 0 <= idx < len(shared) else raw
-    if cell_type == "b":
-        return raw == "1"
-    if cell_type in {"str", "e"}:
-        return raw
-    try:
-        number = float(raw)
-        return int(number) if number.is_integer() else number
-    except ValueError:
-        return raw
-
-
-def load_fund_rows(path: Path, include_arbitrage: bool) -> list[FundRow]:
-    rows = xlsx_rows(path)
-    header_index = None
-    headers: list[str] = []
-    for idx, row in enumerate(rows):
-        cleaned = [str(v).strip() if v is not None else "" for v in row]
-        if "Symbol" in cleaned and "ISIN" in cleaned:
-            header_index = idx
-            headers = cleaned
-            break
-    if header_index is None:
-        raise RuntimeError("Could not find a fund table header row containing Symbol and ISIN.")
-
-    col = {name: i for i, name in enumerate(headers) if name}
-
-    def get(row: list[Any], name: str) -> Any:
-        i = col.get(name)
-        return row[i] if i is not None and i < len(row) else None
+def load_json_fund_rows(path: Path, include_arbitrage: bool) -> list[FundRow]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    records = data.get("funds") if isinstance(data, dict) else data
+    if not isinstance(records, list):
+        raise RuntimeError("JSON holdings must be a list, or an object with a 'funds' list.")
 
     funds: list[FundRow] = []
-    for row in rows[header_index + 1 :]:
-        name = str(get(row, "Symbol") or "").strip()
-        if not name:
-            continue
-        instrument = str(get(row, "Instrument Type") or "").strip()
+    for idx, item in enumerate(records, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(f"JSON holdings row {idx} must be an object.")
+        name = str(item.get("name") or item.get("symbol") or "").strip()
+        isin = str(item.get("isin") or item.get("ISIN") or "").strip()
+        instrument = str(item.get("instrument_type") or item.get("instrumentType") or item.get("Instrument Type") or "").strip()
+        if not name or not isin:
+            raise RuntimeError(f"JSON holdings row {idx} must include name and isin.")
         if not include_arbitrage and ARBITRAGE_RE.search(name + " " + instrument):
             continue
-        units = as_float(get(row, "Quantity Available"))
-        nav = as_float(get(row, "Previous Closing Price"))
         funds.append(
             FundRow(
                 name=name,
-                isin=str(get(row, "ISIN") or "").strip(),
+                isin=isin,
                 instrument_type=instrument,
-                units=units,
-                nav=nav,
-                present_value=units * nav if units is not None and nav is not None else None,
+                units=None,
+                nav=None,
+                present_value=None,
             )
         )
     return funds
+
+
+def load_fund_rows(path: Path, include_arbitrage: bool) -> list[FundRow]:
+    if path.suffix.lower() != ".json":
+        raise RuntimeError(f"Unsupported holdings file type: {path.suffix}. Use .json.")
+    return load_json_fund_rows(path, include_arbitrage)
 
 
 def http_json(url: str, cache: Cache, cache_group: str, refresh: bool = False, retries: int = 2) -> Any:
@@ -2129,11 +2045,13 @@ def write_interactive_report(
       --accent: #22577a;
     }}
     * {{ box-sizing: border-box; }}
-    body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }}
-    header {{ padding: 24px 28px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }}
-    h1 {{ margin: 0 0 6px; font-size: 24px; font-weight: 700; letter-spacing: 0; }}
-    .sub {{ color: var(--muted); font-size: 13px; }}
-    main {{ padding: 18px 28px 28px; }}
+    body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(180deg, #eef4f8 0, #f6f7f9 240px); color: var(--text); }}
+    header {{ padding: 24px 28px 18px; background: #182633; color: #f8fafc; border-bottom: 1px solid #243647; }}
+    .hero {{ display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: end; max-width: 1480px; margin: 0 auto; }}
+    h1 {{ margin: 0 0 6px; font-size: 26px; font-weight: 760; letter-spacing: 0; }}
+    .sub {{ color: #b8c5d4; font-size: 13px; }}
+    .liveLink {{ color: #d7ecff; border: 1px solid #476174; border-radius: 999px; padding: 8px 12px; background: rgba(255,255,255,0.06); font-weight: 700; font-size: 12px; white-space: nowrap; }}
+    main {{ padding: 18px 28px 28px; max-width: 1480px; margin: 0 auto; }}
     .controls {{ display: grid; grid-template-columns: 1.6fr repeat(2, minmax(150px, 220px)); gap: 12px; margin-bottom: 10px; }}
     input, select {{ width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 10px 11px; background: white; color: var(--text); font-size: 14px; }}
     .quickbar {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }}
@@ -2142,9 +2060,22 @@ def write_interactive_report(
     .chipBtn.active {{ background: #e8f3f8; border-color: #9cc9dd; color: var(--accent); }}
     .spacer {{ flex: 1; min-width: 16px; }}
     .stats {{ display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }}
-    .stat {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }}
+    .stat {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }}
     .stat .label {{ color: var(--muted); font-size: 12px; margin-bottom: 5px; }}
     .stat .value {{ font-size: 22px; font-weight: 700; }}
+    .stat .sub {{ color: var(--muted); font-size: 12px; margin-top: 4px; }}
+    .insights {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0 0 16px; }}
+    .fundCard {{ border: 1px solid var(--line); border-left-width: 4px; background: #fff; border-radius: 8px; padding: 11px 12px; cursor: pointer; min-height: 96px; display: grid; gap: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }}
+    .fundCard:hover {{ transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08); }}
+    .fundCard.posBorder {{ border-left-color: var(--pos); }}
+    .fundCard.negBorder {{ border-left-color: var(--neg); }}
+    .fundCard .top {{ display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }}
+    .fundCard .name {{ font-size: 12px; font-weight: 760; color: #1f5f84; line-height: 1.25; }}
+    .fundCard .move {{ font-size: 18px; font-weight: 800; white-space: nowrap; }}
+    .range {{ height: 8px; border-radius: 999px; background: #e8edf3; overflow: hidden; }}
+    .range span {{ display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b8a6e, #2f9e44); }}
+    .fundCard.negBorder .range span {{ background: linear-gradient(90deg, #e03131, #f08c00); }}
+    .metaLine {{ display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }}
     .tableWrap {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: calc(100vh - 270px); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }}
     table {{ width: 100%; min-width: 1360px; border-collapse: separate; border-spacing: 0; font-size: 13px; }}
     th, td {{ padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; background: #fff; }}
@@ -2184,9 +2115,10 @@ def write_interactive_report(
     a:hover {{ text-decoration: underline; }}
     .empty {{ padding: 18px; color: var(--muted); }}
     body.noValues .valueCol {{ display: none; }}
+    body.noValues table {{ min-width: 1080px; }}
     @media (max-width: 900px) {{
       main, header {{ padding-left: 14px; padding-right: 14px; }}
-      .controls, .stats, .detailGrid {{ grid-template-columns: 1fr; }}
+      .hero, .controls, .stats, .detailGrid {{ grid-template-columns: 1fr; }}
       .tableWrap {{ max-height: none; }}
       .stickyDate, .stickyFund {{ position: static; min-width: auto; max-width: none; box-shadow: none; }}
       th:nth-child(7), td:nth-child(7), th:nth-child(9), td:nth-child(9) {{ display: none; }}
@@ -2195,8 +2127,13 @@ def write_interactive_report(
 </head>
 <body>
   <header>
-    <h1>Mutual Fund Daily Change</h1>
-    <div class="sub" id="generated"></div>
+    <div class="hero">
+      <div>
+        <h1>Mutual Fund Daily Change</h1>
+        <div class="sub" id="generated"></div>
+      </div>
+      <a class="liveLink" href="https://vipi-n.github.io/mf-daily-report/" target="_blank">Live report</a>
+    </div>
   </header>
   <main>
     <section class="controls">
@@ -2218,9 +2155,11 @@ def write_interactive_report(
       <button class="chipBtn" data-filter="watchlist">Watchlist</button>
       <button class="chipBtn" data-filter="missing">Missing Data</button>
       <span class="spacer"></span>
+      <button class="chipBtn" id="clearFilters" type="button">Reset</button>
       <button class="chipBtn" id="expandAll" type="button">Expand All</button>
     </section>
     <section class="stats" id="stats"></section>
+    <section class="insights" id="insights"></section>
     <section class="tableWrap">
       <table>
         <thead>
@@ -2248,6 +2187,7 @@ def write_interactive_report(
     const searchEl = document.getElementById('search');
     const dateEl = document.getElementById('dateFilter');
     const sortEl = document.getElementById('sortFilter');
+    const insightsEl = document.getElementById('insights');
     const hasValues = report.funds.some(f => f.invested_value !== null && f.invested_value !== undefined && f.estimated_value_change !== null && f.estimated_value_change !== undefined);
     let sortKey = 'fund';
     let sortDir = 1;
@@ -2257,6 +2197,7 @@ def write_interactive_report(
     const pct = v => v === null || v === undefined || v === '' ? '' : `${{Number(v).toFixed(2)}}%`;
     const money = v => v === null || v === undefined || v === '' ? '' : `Rs ${{Math.round(Number(v)).toLocaleString('en-IN')}}`;
     const cls = v => Number(v) >= 0 ? 'pos' : 'neg';
+    const signed = v => Number(v || 0) >= 0 ? `+${{pct(v)}}` : pct(v);
     const rowId = f => `${{f.analysis_date_iso}}-${{fundName(f)}}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
     const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
     const fundName = f => (f.fund?.name || '').replace(/\\s*-\\s*DIRECT PLAN/i, '');
@@ -2308,13 +2249,16 @@ def write_interactive_report(
     function renderStats(rows) {{
       const avg = rows.length ? rows.reduce((s, r) => s + Number(r.estimated_change_pct || 0), 0) / rows.length : 0;
       const missing = rows.length ? rows.reduce((s, r) => s + Number(r.missing_weight_pct || 0), 0) / rows.length : 0;
+      const gainers = rows.filter(r => Number(r.estimated_change_pct || 0) > 0).length;
+      const losers = rows.filter(r => Number(r.estimated_change_pct || 0) < 0).length;
       const value = rows.reduce((s, r) => s + Number(r.invested_value || 0), 0);
       const valueChange = rows.reduce((s, r) => s + Number(r.estimated_value_change || 0), 0);
       const portfolioPct = value ? valueChange / value * 100 : 0;
       if (!hasValues) {{
         document.getElementById('stats').innerHTML = `
           <div class="stat"><div class="label">Visible Funds</div><div class="value">${{rows.length}}</div></div>
-          <div class="stat"><div class="label">Overall Change</div><div class="value ${{cls(avg)}}">${{pct(avg)}}</div><div class="sub">Equal-weight average</div></div>
+          <div class="stat"><div class="label">Overall Change</div><div class="value ${{cls(avg)}}">${{signed(avg)}}</div><div class="sub">Equal-weight average</div></div>
+          <div class="stat"><div class="label">Market Breadth</div><div class="value">${{gainers}} / ${{losers}}</div><div class="sub">Gainers / Losers</div></div>
           <div class="stat"><div class="label">Average Missing</div><div class="value">${{pct(missing)}}</div></div>
           <div class="stat"><div class="label">Watchlist Flags</div><div class="value">${{rows.filter(r => (r.watchlist_notes || []).length > 0).length}}</div></div>
         `;
@@ -2326,6 +2270,36 @@ def write_interactive_report(
         <div class="stat"><div class="label">Estimated Rs Change</div><div class="value ${{cls(valueChange)}}">${{money(valueChange)}}</div></div>
         <div class="stat"><div class="label">Portfolio Estimate</div><div class="value ${{cls(portfolioPct)}}">${{pct(portfolioPct)}}</div><div class="sub">Avg fund estimate ${{pct(avg)}} | Avg missing ${{pct(missing)}}</div></div>
       `;
+    }}
+
+    function renderInsights(rows) {{
+      if (!rows.length) {{
+        insightsEl.innerHTML = '';
+        return;
+      }}
+      const maxAbs = Math.max(0.1, ...rows.map(r => Math.abs(Number(r.estimated_change_pct || 0))));
+      const ranked = [...rows].sort((a, b) => Math.abs(Number(b.estimated_change_pct || 0)) - Math.abs(Number(a.estimated_change_pct || 0))).slice(0, 8);
+      insightsEl.innerHTML = ranked.map(f => {{
+        const move = Number(f.estimated_change_pct || 0);
+        const width = Math.max(6, Math.abs(move) / maxAbs * 100);
+        const benchmark = f.benchmark_change_pct == null ? 'Benchmark n/a' : `Benchmark ${{signed(f.benchmark_change_pct)}}`;
+        return `
+          <article class="fundCard ${{move >= 0 ? 'posBorder' : 'negBorder'}}" data-fund="${{esc(fundName(f))}}">
+            <div class="top">
+              <div class="name">${{esc(fundName(f))}}</div>
+              <div class="move ${{cls(move)}}">${{signed(move)}}</div>
+            </div>
+            <div class="range"><span style="width:${{width}}%"></span></div>
+            <div class="metaLine"><span>${{esc(benchmark)}}</span><span>Priced ${{pct(f.priced_weight_pct)}}</span></div>
+          </article>
+        `;
+      }}).join('');
+      insightsEl.querySelectorAll('.fundCard').forEach(card => card.addEventListener('click', () => {{
+        searchEl.value = card.dataset.fund || '';
+        activeQuick = 'all';
+        document.querySelectorAll('#quickbar .chipBtn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+        render();
+      }}));
     }}
 
     function miniTable(items, emptyText) {{
@@ -2350,6 +2324,7 @@ def write_interactive_report(
     function render() {{
       const rows = filteredRows();
       renderStats(rows);
+      renderInsights(rows);
       renderSortState();
       rowsEl.innerHTML = rows.map((f) => {{
         const id = rowId(f);
@@ -2409,6 +2384,16 @@ def write_interactive_report(
       document.getElementById('expandAll').textContent = expandedAll ? 'Collapse All' : 'Expand All';
       render();
     }});
+    document.getElementById('clearFilters').addEventListener('click', () => {{
+      searchEl.value = '';
+      dateEl.value = '';
+      sortEl.value = 'fund';
+      sortKey = 'fund';
+      sortDir = 1;
+      activeQuick = 'all';
+      document.querySelectorAll('#quickbar .chipBtn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+      render();
+    }});
     populateFilters();
     render();
   </script>
@@ -2421,9 +2406,9 @@ def write_interactive_report(
 
 def main() -> int:
     args = parse_args()
-    xlsx_path = Path(args.xlsx)
-    if not xlsx_path.exists():
-        print(f"error: workbook not found: {xlsx_path}", file=sys.stderr)
+    holdings_path = Path(args.input)
+    if not holdings_path.exists():
+        print(f"error: holdings file not found: {holdings_path}", file=sys.stderr)
         return 2
 
     save_default_json(
@@ -2458,9 +2443,9 @@ def main() -> int:
         if not k.startswith("_")
     }
     cache = Cache(Path(args.cache_dir), refresh_holdings=args.refresh_holdings)
-    funds = load_fund_rows(xlsx_path, include_arbitrage=args.include_arbitrage)
+    funds = load_fund_rows(holdings_path, include_arbitrage=args.include_arbitrage)
     if args.list_funds:
-        print(f"Parsed {len(funds)} fund(s) from {xlsx_path}; arbitrage excluded: {not args.include_arbitrage}")
+        print(f"Parsed {len(funds)} fund(s) from {holdings_path}; arbitrage excluded: {not args.include_arbitrage}")
         for fund in funds:
             print(f"- {fund.name} | {fund.isin} | {fund.instrument_type}")
         return 0
@@ -2476,7 +2461,7 @@ def main() -> int:
     any_estimates = False
     all_estimates: list[FundEstimate] = []
     all_unresolved: list[dict[str, Any]] = []
-    print(f"Loaded {len(funds)} fund(s) from {xlsx_path}; arbitrage excluded: {not args.include_arbitrage}")
+    print(f"Loaded {len(funds)} fund(s) from {holdings_path}; arbitrage excluded: {not args.include_arbitrage}")
     for trade_date in run_dates:
         estimates: list[FundEstimate] = []
         unresolved: list[tuple[FundRow, str]] = []

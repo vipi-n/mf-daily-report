@@ -1,0 +1,44 @@
+{
+  "funds": [
+    {
+      "name": "HDFC MID CAP FUND - DIRECT PLAN",
+      "isin": "INF179K01XQ0",
+      "instrument_type": "Equity - Mid Cap"
+    },
+    {
+      "name": "ICICI PRUDENTIAL NASDAQ 100 INDEX FUND - DIRECT PLAN",
+      "isin": "INF109KC1U50",
+      "instrument_type": "Others - Index Funds/ETFs"
+    },
+    {
+      "name": "MOTILAL OSWAL MIDCAP FUND - DIRECT PLAN",
+      "isin": "INF247L01445",
+      "instrument_type": "Equity - Mid Cap"
+    },
+    {
+      "name": "PARAG PARIKH FLEXI CAP FUND - DIRECT PLAN",
+      "isin": "INF879O01027",
+      "instrument_type": "Equity - Flexi Cap"
+    },
+    {
+      "name": "QUANT MID CAP FUND - DIRECT PLAN",
+      "isin": "INF966L01887",
+      "instrument_type": "Equity - Mid Cap"
+    },
+    {
+      "name": "QUANT SMALL CAP FUND - DIRECT PLAN",
+      "isin": "INF966L01689",
+      "instrument_type": "Equity - Small Cap"
+    },
+    {
+      "name": "UTI NIFTY200 MOMENTUM 30 INDEX FUND - DIRECT PLAN",
+      "isin": "INF789F1AUT5",
+      "instrument_type": "Others - Index Funds/ETFs"
+    },
+    {
+      "name": "UTI NIFTY 50 INDEX FUND - DIRECT PLAN",
+      "isin": "INF789F01XA0",
+      "instrument_type": "Others - Index Funds/ETFs"
+    }
+  ]
+}
