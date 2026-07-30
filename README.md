@@ -1,13 +1,39 @@
 # Mutual Fund Daily Change Estimator
 
-This script estimates the end-of-day move for the non-arbitrage mutual funds in `holdings.xlsx`.
+This script estimates the end-of-day percentage move for the non-arbitrage mutual funds in `holdings_public.xlsx`.
 
-It reads your fund list from the workbook, excludes funds whose name or instrument type contains `Arbitrage`, and writes fund-level movement to `reports/`. For today's run it fetches the latest displayed fund holdings from Groww and prices stock 1D changes where available. For older dates it uses AMFI's official historical NAV download, filtered locally by your fund ISINs. It also uses your current holding value from the workbook to estimate rupee gain/loss per fund and total portfolio impact. At the end of the run it opens an interactive HTML report with filters, quick views, sorting, contributors, missing holdings, value impact, and watchlist notes. MFData can still be used as a holdings fallback; Indian benchmarks use NSE's daily index archive first and then Finology for current-day fallback.
+It reads your fund list from the public workbook, excludes funds whose name or instrument type contains `Arbitrage`, and writes fund-level movement to `reports/`. For today's run it fetches the latest displayed fund holdings from Groww and prices stock 1D changes where available. For older dates it uses AMFI's official historical NAV download, filtered locally by your fund ISINs. Because `holdings_public.xlsx` does not contain quantities or invested values, the public report shows percentage changes only. The combined overall change is an equal-weight average across the listed funds, not a money-weighted portfolio return. MFData can still be used as a holdings fallback; Indian benchmarks use NSE's daily index archive first and then Finology for current-day fallback.
 
 Run:
 
 ```bash
-python3 mf_daily_change.py
+python3 mf_daily_change.py --xlsx holdings_public.xlsx
+```
+
+Local runs:
+
+- Public percentage-only report:
+
+```bash
+python3 mf_daily_change.py --xlsx holdings_public.xlsx
+```
+
+- Specific date:
+
+```bash
+python3 mf_daily_change.py --xlsx holdings_public.xlsx --date 29-07-2026
+```
+
+- Last 2 calendar days:
+
+```bash
+python3 mf_daily_change.py --xlsx holdings_public.xlsx --days 2
+```
+
+- Private local report with rupee impact, only if you keep `holdings.xlsx` locally:
+
+```bash
+python3 mf_daily_change.py --xlsx holdings.xlsx
 ```
 
 Useful options:
@@ -18,7 +44,7 @@ python3 mf_daily_change.py --include-arbitrage
 python3 mf_daily_change.py --list-funds
 python3 mf_daily_change.py --source groww
 python3 mf_daily_change.py --source mfdata
-python3 mf_daily_change.py --date 28-07-2026
+python3 mf_daily_change.py --xlsx holdings_public.xlsx --date 28-07-2026
 python3 mf_daily_change.py --no-open
 python3 mf_daily_change.py --min-weight 0.1
 python3 mf_daily_change.py --max-holdings 30
@@ -57,6 +83,7 @@ Investment watchlist notes:
 
 Important limitations:
 
+- `holdings_public.xlsx` contains only fund name, ISIN, and instrument type, so the public report cannot calculate rupee impact or money-weighted return.
 - Current-day output is an approximation until the official NAV is published.
 - Older-date output is based on official AMFI NAV movement, but benchmark availability depends on whether the index appears in NSE's daily index archive for that date.
 - Groww holdings still reflect disclosed portfolios, not live daily portfolios.
@@ -75,4 +102,4 @@ GitHub Pages automation:
 - The public report publishes percentage changes only. Its combined overall change is an equal-weight average across the listed funds, not a money-weighted portfolio return.
 - The workflow publishes the newest generated report as the GitHub Pages home page.
 - In GitHub, open the repository settings, go to `Pages`, and set `Build and deployment` -> `Source` to `GitHub Actions`.
-- Do not commit `holdings.xlsx` if you do not want invested values visible in the repository.
+
