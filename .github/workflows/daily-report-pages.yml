@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-    schedule:
+  schedule:
     # Temporary test: runs every 5 minutes. Remove after confirming schedule works.
     - cron: "*/5 * * * *"
     # 06:45 UTC = 12:15 IST. Midday update, Monday-Friday.
