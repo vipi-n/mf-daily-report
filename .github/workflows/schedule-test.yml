@@ -1,0 +1,18 @@
+name: Schedule test
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print schedule time
+        run: |
+          echo "Schedule test fired at $(date -u)"
+          echo "Event: $GITHUB_EVENT_NAME"
