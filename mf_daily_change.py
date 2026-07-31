@@ -2304,20 +2304,151 @@ def write_interactive_report(
       .stickyDate, .stickyFund {{ position: static; min-width: auto; max-width: none; box-shadow: none; }}
       th:nth-child(7), td:nth-child(7), th:nth-child(8), td:nth-child(8) {{ display: none; }}
     }}
+    /* RoleScout-inspired presentation layer */
+    :root {{
+      --bg: #f5f2ea;
+      --panel: #fffdfa;
+      --panel-soft: #ebe7dc;
+      --text: #183128;
+      --muted: #607169;
+      --line: #d7d2c6;
+      --pos: #1d7d58;
+      --neg: #c4473a;
+      --warn: #a86326;
+      --accent: #1d5c45;
+      --accent-2: #ee6c3b;
+      --ink: #183128;
+    }}
+    body {{ background: var(--bg); color: var(--text); }}
+    header {{ padding: 0; background: transparent; border-bottom: 0; }}
+    .nav {{ display: flex; justify-content: space-between; align-items: center; max-width: 1240px; margin: 0 auto; padding: 22px 34px; border-bottom: 1px solid var(--line); }}
+    .brand {{ display: inline-flex; align-items: center; gap: 11px; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-size: 22px; font-weight: 700; letter-spacing: 0; }}
+    .brandMark {{ display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--text); color: var(--panel); font-size: 15px; }}
+    .navActions {{ display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: flex-end; }}
+    .schedulePill {{ display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 999px; padding: 9px 13px; color: var(--muted); font-size: 12px; font-weight: 650; }}
+    .liveDot {{ width: 7px; height: 7px; border-radius: 50%; background: #51a878; box-shadow: 0 0 0 4px #dcecdf; }}
+    .hero {{ max-width: 1240px; grid-template-columns: minmax(0, 1.15fr) minmax(330px, .7fr); padding: 70px 34px 58px; gap: 70px; align-items: end; }}
+    .heroTitle {{ min-height: 0; }}
+    .eyebrow, .section-kicker {{ width: auto; border: 0; background: transparent; border-radius: 0; padding: 0; color: var(--accent-2); font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }}
+    h1 {{ margin: 18px 0 22px; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-size: clamp(50px, 7vw, 92px); font-weight: 500; letter-spacing: 0; line-height: .92; }}
+    h1 span {{ color: var(--accent); font-style: italic; }}
+    .sub {{ max-width: 590px; color: var(--muted); font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.55; }}
+    .heroActions {{ margin-top: 24px; }}
+    .liveLink {{ background: var(--accent-2); border-radius: 2px; color: white; padding: 13px 18px; font-size: 13px; }}
+    .chipBtn, button {{ border-radius: 999px; border-color: var(--line); color: var(--text); background: var(--panel); }}
+    .chipBtn.active {{ background: var(--accent); border-color: var(--accent); color: white; }}
+    .heroPanel {{ min-width: 0; border: 0; border-radius: 2px; background: var(--text); color: var(--panel); padding: 25px 26px 22px; }}
+    .heroMetric {{ padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.22); }}
+    .heroMetric .label, .heroMini .label {{ color: #f18a62; font-size: 10px; letter-spacing: .13em; }}
+    .heroMetric .value {{ margin-top: 10px; color: var(--panel); font-family: Georgia, "Times New Roman", serif; font-size: 48px; font-weight: 500; }}
+    .heroMetric .value.pos, .heroMetric .value.neg {{ color: var(--panel); }}
+    .heroGrid {{ gap: 18px; margin-top: 18px; }}
+    .heroMini {{ min-height: 0; padding: 0; border: 0; background: transparent; }}
+    .heroMini .value {{ margin-top: 7px; color: #dbe5df; font-size: 13px; font-weight: 650; }}
+    .heroMini .value span.pos {{ color: #9be0bc; }}
+    .heroMini .value span.neg {{ color: #ff9a7c; }}
+    main {{ max-width: 1240px; padding: 0 34px 52px; }}
+    .toolbar {{ background: transparent; border: 0; border-radius: 0; padding: 0; }}
+    .controls {{ grid-template-columns: minmax(220px, 1.2fr) minmax(150px, 210px) minmax(170px, 230px) auto; margin-bottom: 14px; }}
+    input, select {{ border-radius: 2px; border-color: var(--line); background: var(--panel); color: var(--text); padding: 12px 13px; }}
+    input:focus, select:focus {{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,92,69,.12); }}
+    .viewToggle {{ height: 43px; border-radius: 2px; background: var(--panel-soft); }}
+    .viewToggle button {{ border-radius: 2px; }}
+    .viewToggle button.active {{ background: var(--text); color: var(--panel); }}
+    .quickbar {{ margin-bottom: 24px; }}
+    .stats {{ grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 0; margin: 26px 0 38px; background: var(--panel); border: 1px solid var(--line); }}
+    .stat {{ border: 0; border-right: 1px solid var(--line); border-radius: 0; background: transparent; padding: 22px 24px; }}
+    .stat:last-child {{ border-right: 0; }}
+    .stat .label {{ color: var(--muted); font-size: 10px; letter-spacing: .06em; }}
+    .stat .value {{ color: var(--text); font-family: Georgia, "Times New Roman", serif; font-size: 34px; font-weight: 500; }}
+    .stat .value.pos {{ color: var(--pos); }}
+    .stat .value.neg {{ color: var(--neg); }}
+    .sectionHead {{ margin: 34px 0 14px; align-items: center; }}
+    .sectionHead h2 {{ font-family: Georgia, "Times New Roman", serif; font-size: 32px; font-weight: 500; }}
+    .sectionHead p {{ color: var(--muted); }}
+    .insights {{ display: block; margin-bottom: 38px; background: var(--panel); border: 1px solid var(--line); }}
+    .fundCard {{ min-height: 0; display: grid; grid-template-columns: minmax(220px, 1fr) minmax(110px, auto) minmax(260px, .9fr); align-items: center; gap: 22px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; padding: 20px 24px; }}
+    .fundCard:last-child {{ border-bottom: 0; }}
+    .fundCard::before {{ display: none; }}
+    .fundCard:hover {{ background: #f8f4ec; border-color: var(--line); }}
+    .fundCard .top {{ display: contents; }}
+    .fundCard .name {{ color: var(--accent-2); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }}
+    .fundCard .move {{ color: var(--text); font-family: Georgia, "Times New Roman", serif; font-size: 32px; font-weight: 500; }}
+    .fundCard .move.pos {{ color: var(--pos); }}
+    .fundCard .move.neg {{ color: var(--neg); }}
+    .fundCard .range {{ display: none; }}
+    .metaLine {{ color: var(--muted); font-size: 13px; line-height: 1.4; }}
+    .tableWrap {{ max-height: none; border-radius: 0; border: 1px solid var(--line); background: var(--panel); }}
+    table {{ min-width: 1040px; font-size: 13px; }}
+    th, td {{ background: var(--panel); border-bottom-color: var(--line); padding: 15px 18px; }}
+    th, th.stickyDate, th.stickyFund {{ background: var(--panel-soft); color: var(--text); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }}
+    tbody tr.mainRow:hover td, .mainRow.open td, .details td {{ background: #f8f4ec; }}
+    .fundCell a {{ color: var(--text); font-family: Georgia, "Times New Roman", serif; font-size: 19px; font-weight: 600; }}
+    .pill {{ border-radius: 999px; background: var(--panel-soft); color: var(--muted); }}
+    .pill.pos {{ background: #e3efe5; color: var(--pos); }}
+    .pill.neg {{ background: #f6dfd8; color: var(--neg); }}
+    .bar, .range {{ background: #e2ded4; }}
+    .detailBox {{ border-radius: 0; background: var(--panel); }}
+    .detailBox h3 {{ background: var(--panel-soft); font-family: Georgia, "Times New Roman", serif; font-size: 18px; font-weight: 500; }}
+    body.dark {{
+      --bg: #0b1310;
+      --panel: #101a16;
+      --panel-soft: #17231e;
+      --text: #e8eee9;
+      --muted: #a6b5ae;
+      --line: #2b3a34;
+      --pos: #80cda7;
+      --neg: #ff8151;
+      --warn: #f2b36d;
+      --accent: #80cda7;
+      --accent-2: #ff8151;
+      --ink: #e8eee9;
+    }}
+    body.dark header, body.dark .toolbar {{ background: transparent; }}
+    body.dark .brandMark, body.dark .heroPanel, body.dark .viewToggle button.active {{ background: #07100d; color: #f1f5f2; }}
+    body.dark .liveDot {{ box-shadow: 0 0 0 4px #19382c; }}
+    body.dark .liveLink {{ background: var(--accent-2); color: white; }}
+    body.dark input, body.dark select, body.dark .chipBtn, body.dark button {{ background: var(--panel); color: var(--text); border-color: var(--line); }}
+    body.dark .stat, body.dark .fundCard, body.dark .tableWrap, body.dark .detailBox {{ background: transparent; border-color: var(--line); }}
+    body.dark .stats, body.dark .insights {{ background: var(--panel); border-color: var(--line); }}
+    body.dark .fundCard:hover, body.dark tbody tr.mainRow:hover td, body.dark .mainRow.open td, body.dark .details td {{ background: #17231e; }}
+    body.dark th, body.dark th.stickyDate, body.dark th.stickyFund, body.dark .detailBox h3 {{ background: #17231e; color: var(--text); }}
+    body.dark td {{ background: var(--panel); border-color: var(--line); }}
+    body.dark .fundCard .name {{ color: var(--accent-2); }}
+    body.dark .fundCard .move, body.dark .fundCell a, body.dark .stat .value {{ color: var(--text); }}
+    body.dark .fundCard .move.pos, body.dark .stat .value.pos {{ color: var(--pos); }}
+    body.dark .fundCard .move.neg, body.dark .stat .value.neg {{ color: var(--neg); }}
+    body.dark .bar, body.dark .range {{ background: #26352f; }}
+    @media (max-width: 900px) {{
+      .nav, .hero, main {{ padding-left: 18px; padding-right: 18px; }}
+      .nav {{ align-items: flex-start; gap: 16px; }}
+      .hero {{ padding-top: 44px; gap: 34px; }}
+      h1 {{ font-size: 46px; }}
+      .stats {{ grid-template-columns: 1fr 1fr; }}
+      .stat:nth-child(2n) {{ border-right: 0; }}
+      .fundCard {{ grid-template-columns: 1fr; gap: 10px; }}
+    }}
   </style>
 </head>
 <body>
   <header>
-    <div class="hero">
+    <nav class="nav">
+      <a class="brand" href="#top" aria-label="Mutual fund report home">
+        <span class="brandMark" aria-hidden="true">M</span>
+        <span>FundScope</span>
+      </a>
+      <div class="navActions">
+        <button class="chipBtn" id="themeToggle" type="button">Dark mode</button>
+        <span class="schedulePill"><span class="liveDot" aria-hidden="true"></span>Weekdays 12:01 PM &amp; 6:45 PM</span>
+        <a class="liveLink" href="https://vipi-n.github.io/mf-daily-report/" target="_blank">Live report</a>
+      </div>
+    </nav>
+    <div class="hero" id="top">
       <div class="heroTitle">
         <div>
           <div class="eyebrow">Daily fund monitor</div>
-          <h1>Mutual Fund Daily Change</h1>
+          <h1>Fund moves,<br><span>right on time.</span></h1>
           <div class="sub" id="generated"></div>
-        </div>
-        <div class="heroActions">
-          <a class="liveLink" href="https://vipi-n.github.io/mf-daily-report/" target="_blank">Open live report</a>
-          <button class="chipBtn" id="themeToggle" type="button">Dark mode</button>
         </div>
       </div>
       <aside class="heroPanel">
@@ -2563,11 +2694,6 @@ def write_interactive_report(
       return `<table class="mini"><thead><tr><th>Name</th><th class="num">Weight</th><th>Hint</th></tr></thead><tbody>` +
         items.map(i => `<tr><td>${{i.stock_url ? `<a href="${{esc(i.stock_url)}}" target="_blank">${{esc(i.holding)}}</a>` : esc(i.holding)}}</td><td class="num">${{pct(i.weight_pct)}}</td><td>${{esc(i.symbol_hint || '')}}</td></tr>`).join('') +
         `</tbody></table>`;
-    }}
-
-    function notesList(items) {{
-      if (!items || !items.length) return '<div class="empty">No watchlist flags.</div>';
-      return `<ul>${{items.map(n => `<li>${{esc(n)}}</li>`).join('')}}</ul>`;
     }}
 
     function render() {{

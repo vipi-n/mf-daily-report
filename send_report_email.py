@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import html as html_lib
 import json
 import os
 import smtplib
@@ -35,6 +36,10 @@ def fund_name(row: dict[str, Any]) -> str:
     return name.replace(" - DIRECT PLAN", "").strip()
 
 
+def esc(value: Any) -> str:
+    return html_lib.escape(str(value or ""), quote=True)
+
+
 def build_email(payload: dict[str, Any]) -> tuple[str, str, str]:
     rows = list(payload.get("funds") or [])
     generated = str(payload.get("generated_at") or "")
@@ -43,18 +48,18 @@ def build_email(payload: dict[str, Any]) -> tuple[str, str, str]:
     avg = sum(float(row.get("estimated_change_pct") or 0) for row in rows) / len(rows) if rows else 0.0
     gainers = [row for row in rows if float(row.get("estimated_change_pct") or 0) > 0]
     losers = [row for row in rows if float(row.get("estimated_change_pct") or 0) < 0]
-    flags = [row for row in rows if row.get("watchlist_notes")]
     top = sorted(rows, key=lambda row: float(row.get("estimated_change_pct") or 0), reverse=True)[:3]
     bottom = sorted(rows, key=lambda row: float(row.get("estimated_change_pct") or 0))[:3]
+    missing_avg = sum(float(row.get("missing_weight_pct") or 0) for row in rows) / len(rows) if rows else 0.0
 
-    subject = f"Mutual fund daily report {label}: {pct(avg)}"
+    subject = f"{len(rows)} funds worth a look - FundScope"
 
     lines = [
-        f"Mutual Fund Daily Change - {label}",
+        f"FundScope - {label}",
         "",
         f"Overall equal-weight change: {pct(avg)}",
         f"Gainers / Losers: {len(gainers)} / {len(losers)}",
-        f"Watchlist flags: {len(flags)}",
+        f"Average missing weight: {pct(missing_avg)}",
         "",
         "Top movers:",
         *[f"- {fund_name(row)}: {pct(row.get('estimated_change_pct'))}" for row in top],
@@ -62,40 +67,72 @@ def build_email(payload: dict[str, Any]) -> tuple[str, str, str]:
         "Weakest movers:",
         *[f"- {fund_name(row)}: {pct(row.get('estimated_change_pct'))}" for row in bottom],
     ]
-    if flags:
-        lines.extend(
-            [
-                "",
-                "Watchlist:",
-                *[
-                    f"- {fund_name(row)}: {' | '.join(str(note) for note in row.get('watchlist_notes', [])[:2])}"
-                    for row in flags[:5]
-                ],
-            ]
-        )
     lines.extend(["", f"Full report: {REPORT_URL}", f"Generated: {generated}"])
 
-    html_items = "".join(
-        f"<li><strong>{fund_name(row)}</strong>: {pct(row.get('estimated_change_pct'))}</li>" for row in top
-    )
-    html_flags = ""
-    if flags:
-        html_flags = "<h3>Watchlist</h3><ul>" + "".join(
-            f"<li><strong>{fund_name(row)}</strong>: {' | '.join(str(note) for note in row.get('watchlist_notes', [])[:2])}</li>"
-            for row in flags[:5]
-        ) + "</ul>"
+    def fund_rows(title: str, items: list[dict[str, Any]]) -> str:
+        if not items:
+            return ""
+        body = "".join(
+            f"""
+            <tr>
+              <td style="padding:18px 0;border-top:1px solid #d7d2c6">
+                <div style="color:#ee6c3b;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em">{esc(row.get("benchmark_name") or "Mutual fund")}</div>
+                <div style="color:#183128;font:600 20px Georgia,serif;margin:5px 0">{esc(fund_name(row))}</div>
+                <div style="color:#607169;font:12px Arial,sans-serif">
+                  Estimate <strong style="color:{'#1d7d58' if float(row.get('estimated_change_pct') or 0) >= 0 else '#c4473a'}">{pct(row.get("estimated_change_pct"))}</strong>
+                  · Benchmark {pct(row.get("benchmark_change_pct")) or "n/a"}
+                  · Priced {pct(row.get("priced_weight_pct"))}
+                </div>
+              </td>
+            </tr>
+            """
+            for row in items
+        )
+        return f"""
+          <tr>
+            <td style="padding:22px 0 8px;color:#ee6c3b;font:700 10px Arial,sans-serif;letter-spacing:.12em">
+              {esc(title)}
+            </td>
+          </tr>
+          {body}
+        """
+
+    cards = fund_rows("TOP MOVERS", top) + fund_rows("WEAKEST MOVERS", bottom)
     html = f"""
+    <!doctype html>
     <html>
-      <body style="font-family: Arial, sans-serif; color: #1f2933;">
-        <h2>Mutual Fund Daily Change - {label}</h2>
-        <p><strong>Overall equal-weight change:</strong> {pct(avg)}</p>
-        <p><strong>Gainers / Losers:</strong> {len(gainers)} / {len(losers)}<br>
-        <strong>Watchlist flags:</strong> {len(flags)}</p>
-        <h3>Top movers</h3>
-        <ul>{html_items}</ul>
-        {html_flags}
-        <p><a href="{REPORT_URL}">Open full report</a></p>
-        <p style="color:#66758a;font-size:12px;">Generated: {generated}</p>
+      <body style="margin:0;background:#f5f2ea;padding:28px 12px">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr><td align="center">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fffdfa">
+              <tr>
+                <td style="background:#183128;color:#fff;padding:34px 38px">
+                  <div style="color:#f18a62;font:700 11px Arial,sans-serif;letter-spacing:.12em">FUNDSCOPE · DAILY EDITION</div>
+                  <h1 style="font:500 38px Georgia,serif;line-height:1.05;margin:13px 0 8px">Fund moves,<br><i>right on time.</i></h1>
+                  <p style="color:#c4d0cb;font:14px Arial,sans-serif;line-height:1.5;margin:0">Daily estimated changes for your selected mutual funds.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:25px 38px 8px">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td style="width:33%;color:#183128;font:500 28px Georgia,serif">{pct(avg)}<div style="color:#607169;font:10px Arial,sans-serif">AVG MOVE</div></td>
+                      <td style="width:33%;color:#183128;font:500 28px Georgia,serif">{len(gainers)} / {len(losers)}<div style="color:#607169;font:10px Arial,sans-serif">GAINERS / LOSERS</div></td>
+                      <td style="width:33%;color:#183128;font:500 28px Georgia,serif">{len(rows)}<div style="color:#607169;font:10px Arial,sans-serif">FUNDS</div></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr><td style="padding:13px 38px 8px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">{cards}</table></td></tr>
+              <tr>
+                <td style="padding:24px 38px 38px">
+                  <a href="{REPORT_URL}" style="display:inline-block;background:#ee6c3b;color:white;text-decoration:none;font:700 13px Arial,sans-serif;padding:14px 20px;border-radius:2px">Open full report -></a>
+                  <p style="color:#7c8984;font:10px Arial,sans-serif;line-height:1.5;margin:20px 0 0">Generated {esc(generated)}. This estimate is based on available holding and market data and may differ from official NAV movement.</p>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
       </body>
     </html>
     """
@@ -132,7 +169,7 @@ def main() -> int:
     try:
         with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
             server.starttls()
-            server.login(smtp_user, smtp_password)
+            server.login(smtp_user, smtp_password.replace(" ", ""))
             server.send_message(message)
     except smtplib.SMTPAuthenticationError:
         print(
